@@ -1,3 +1,6 @@
 /.gradle
 /build
+/.project
+/.classpath
+/.settings
 .DS_STORE
