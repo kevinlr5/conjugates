@@ -13,6 +13,11 @@ buildscript {
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'org.springframework.boot'
+apply plugin: 'checkstyle'
+
+checkstyle {
+   toolVersion ="7.4" 
+}
 
 jar {
 	baseName = 'conjugates'
