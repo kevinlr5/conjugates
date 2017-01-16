@@ -2,10 +2,14 @@ package org.conjugates.analyzer;
 
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 
 
-@SpringBootApplication // same as @Configuration @EnableAutoConfiguration @ComponentScan
+@Configuration
+@EnableAutoConfiguration
+@ComponentScan
 public class AnalyzerApplication {
 
   public static void main(String[] args) {
