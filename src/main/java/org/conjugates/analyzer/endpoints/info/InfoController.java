@@ -4,11 +4,14 @@ import org.conjugates.analyzer.services.properties.AnalyzerProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-@RequestMapping("/info")
+@RequestMapping("/api/info")
 @RestController
 public class InfoController {
 
@@ -21,11 +24,17 @@ public class InfoController {
     this.properties = properties;
   }
 
-  @RequestMapping("/")
+  @RequestMapping(value = "/", method = RequestMethod.GET)
   @ResponseBody
   public InfoResponse info() {
     LOG.debug("Call to info made");
     return new InfoResponse(properties.getName(), properties.getVersion());
+  }
+
+  @RequestMapping(value = "/testpost", method = RequestMethod.POST)
+  @ResponseStatus(HttpStatus.OK)
+  public void testPost() {
+    LOG.debug("POST!!!!");
   }
 
 }
