@@ -5,9 +5,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-@RequestMapping("/v1/info")
+@RequestMapping("/info")
 @RestController
 public class InfoController {
 
@@ -21,9 +22,10 @@ public class InfoController {
   }
 
   @RequestMapping("/")
-  public String name() {
+  @ResponseBody
+  public InfoResponse info() {
     LOG.debug("Call to info made");
-    return properties.getName();
+    return new InfoResponse(properties.getName(), properties.getVersion());
   }
 
 }

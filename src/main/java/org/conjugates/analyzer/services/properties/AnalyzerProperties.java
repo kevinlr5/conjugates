@@ -4,4 +4,6 @@ public interface AnalyzerProperties {
 
   String getName();
 
+  String getVersion();
+
 }
