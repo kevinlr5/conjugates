@@ -1,5 +1,6 @@
 package org.conjugates.analyzer.endpoints.info;
 
+import org.conjugates.analyzer.server.exception.UnauthorizedException;
 import org.conjugates.analyzer.services.properties.AnalyzerProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,12 @@ public class InfoController {
   public InfoResponse info() {
     LOG.debug("Call to info made");
     return new InfoResponse(properties.getName(), properties.getVersion());
+  }
+
+  @RequestMapping(value = "/unauthorized", method = RequestMethod.GET)
+  @ResponseBody
+  public InfoResponse missing() {
+    throw new UnauthorizedException("unauthorized!!!");
   }
 
   @RequestMapping(value = "/testpost", method = RequestMethod.POST)
