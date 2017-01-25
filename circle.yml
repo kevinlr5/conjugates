@@ -1,0 +1,10 @@
+machine:
+  java:
+    version:
+      oraclejdk8
+dependencies:
+  override:
+    - echo 'skipping dependencies'
+test:
+  override:
+    - ./gradlew clean check
