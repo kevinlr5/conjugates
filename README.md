@@ -1,1 +1,24 @@
 # conjugates
+
+A server that can analyze the Russell Conjugation of inputs
+
+- Russell Conjugation: https://en.wikipedia.org/wiki/Emotive_conjugation
+- Repo: https://github.com/kevinlr5/conjugates
+
+## Developer Setup
+
+### Eclipse
+
+1. Install the latest version of eclipse
+2. Import and use the eclipse style settings in ide-resources/eclipse-java-google-style.xml
+3. Run `./gradlew clean eclipse` and import the projects
+
+## Builds
+
+- Unbreakable test build: `./gradlew clean check`
+- Run server: `./gradlew clean bootRun`
+- Build runnable server jar: `./gradlew clean bootRepackage`
+
+## CI
+
+Every PR to develop kicks off a CircleCI build that runs `./gradlew clean check`
