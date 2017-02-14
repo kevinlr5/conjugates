@@ -34,7 +34,7 @@ public class InfoController {
 
   @RequestMapping(value = "/unauthorized", method = RequestMethod.GET)
   @ResponseBody
-  public InfoResponse missing() {
+  public InfoResponse unauthorized() {
     throw new UnauthorizedException("unauthorized!!!");
   }
 
