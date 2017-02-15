@@ -7,4 +7,4 @@ dependencies:
     - echo 'skipping dependencies'
 test:
   override:
-    - ./gradlew clean check
+    - ./gradlew clean check build
