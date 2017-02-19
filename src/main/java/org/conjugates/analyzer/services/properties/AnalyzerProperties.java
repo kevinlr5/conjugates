@@ -6,4 +6,6 @@ public interface AnalyzerProperties {
 
   String getVersion();
 
+  int getPort();
+
 }
