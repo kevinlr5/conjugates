@@ -15,7 +15,9 @@ A server that can analyze the Russell Conjugation of inputs
 
 ## Builds
 
-- Unbreakable test build: `./gradlew clean check build asciidoctor`
+Conjugates uses gradle as its build system. The gradle wrapper is committed to the repo. Additionally, the build configuration uses a multi-project build.
+
+- Unbreakable test build: `./gradlew clean build asciidoctor`
 - Run server: `./gradlew clean bootRun`
 - Build runnable server jar: `./gradlew clean build`
 - Build server html documentation: `./gradlew clean asciidoctor`

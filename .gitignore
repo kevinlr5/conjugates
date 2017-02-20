@@ -1,8 +1,8 @@
 /.gradle
-/build
-/.project
-/.classpath
-/.settings
-/.bin
+**/build
+**/.project
+**/.classpath
+**/.settings
+**/.bin
 .DS_STORE
-/bin/
+**/bin/
