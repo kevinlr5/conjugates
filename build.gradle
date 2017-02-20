@@ -1,56 +1,60 @@
 buildscript {
-    ext {
-        springBootVersion = '1.4.3.RELEASE'
-    }
     repositories {
         mavenCentral()
         jcenter()
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-        classpath("org.asciidoctor:asciidoctor-gradle-plugin:1.5.3")
+        classpath("org.asciidoctor:asciidoctor-gradle-plugin:${asciidoctorPluginVersion}")
     }
 }
 
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'org.springframework.boot'
-apply plugin: 'checkstyle'
-apply plugin: 'org.asciidoctor.convert'
+project.version = version
 
-checkstyle {
-   toolVersion ="7.4" 
+subprojects {
+    group = 'org.conjugates'
+    version = rootProject.version
 }
 
-ext {
-    snippetsDir = file('build/generated-snippets')
-}
+project(":analyzer") {
+    apply plugin: 'java'
+    apply plugin: 'eclipse'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'checkstyle'
+    apply plugin: 'org.asciidoctor.convert'
+    
+    checkstyle {
+       toolVersion = checkstyleToolVersion
+       configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
+    }
+    
+    ext {
+        snippetsDir = file('build/generated-snippets')
+    }
+    
+    sourceCompatibility = 1.8
+    
+    repositories {
+        mavenCentral()
+    }
+    
+    dependencies {
+        compile('org.springframework.boot:spring-boot-starter-aop')
+        // compile('org.springframework.boot:spring-boot-starter-security')
+        compile('org.springframework.boot:spring-boot-starter-web')
 
-jar {
-    baseName = 'conjugates'
-    version = '0.0.1-SNAPSHOT'
-}
-
-sourceCompatibility = 1.8
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    compile('org.springframework.boot:spring-boot-starter-aop')
-    // compile('org.springframework.boot:spring-boot-starter-security')
-    compile('org.springframework.boot:spring-boot-starter-web')
-    testCompile('org.springframework.boot:spring-boot-starter-test')
-    testCompile('org.springframework.restdocs:spring-restdocs-mockmvc')
-}
-
-test {
-    outputs.dir snippetsDir
-}
-
-asciidoctor {
-    attributes 'snippets': snippetsDir
-    inputs.dir snippetsDir
-    dependsOn test
+        testCompile('org.springframework.boot:spring-boot-starter-test')
+        testCompile('org.springframework.restdocs:spring-restdocs-mockmvc')
+    }
+    
+    test {
+        outputs.dir snippetsDir
+    }
+    
+    asciidoctor {
+        attributes 'snippets': snippetsDir
+        inputs.dir snippetsDir
+        dependsOn test
+    }
+    
 }
