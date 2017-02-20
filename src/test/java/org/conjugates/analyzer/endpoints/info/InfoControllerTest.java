@@ -1,13 +1,16 @@
 package org.conjugates.analyzer.endpoints.info;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import org.conjugates.analyzer.framework.AnalyzerIntegrationBaseTest;
 import org.conjugates.analyzer.framework.TestHttpService;
+import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 public class InfoControllerTest extends AnalyzerIntegrationBaseTest {
 
@@ -17,26 +20,29 @@ public class InfoControllerTest extends AnalyzerIntegrationBaseTest {
   @Test
   public void testInfo() throws Exception {
     MvcResult result = http.mvc()
-        .perform(MockMvcRequestBuilders.get("/api/info/").accept(MediaType.APPLICATION_JSON))
-        .andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
-    String content = result.getResponse().getContentAsString();
-    System.out.println(content);
+        .perform(get("/api/info/"))
+        .andExpect(status().isOk())
+        .andReturn();
+    InfoResponse response = http.deserialize(result, InfoResponse.class);
+    Assert.assertEquals(new InfoResponse("Analyzer", "0.1"), response);
   }
 
   @Test
   public void testUnauthorized() throws Exception {
     http.mvc()
-        .perform(
-            MockMvcRequestBuilders.get("/api/info/unauthorized").accept(MediaType.APPLICATION_JSON))
-        .andExpect(MockMvcResultMatchers.status().isUnauthorized()).andReturn();
+        .perform(get("/api/info/unauthorized"))
+        .andExpect(status().isUnauthorized())
+        .andReturn();
   }
 
   @Test
   public void testPost() throws Exception {
+    InfoTestPostRequest request = new InfoTestPostRequest("testRequest");
     http.mvc()
-        .perform(
-            MockMvcRequestBuilders.post("/api/info/testpost").accept(MediaType.APPLICATION_JSON))
-        .andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
+        .perform(post("/api/info/testpost").contentType(MediaType.APPLICATION_JSON)
+            .content(http.serialize(request)))
+        .andExpect(status().isOk())
+        .andReturn();
   }
 
 }

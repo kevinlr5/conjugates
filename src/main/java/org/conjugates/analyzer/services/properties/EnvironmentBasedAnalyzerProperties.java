@@ -9,6 +9,7 @@ public class EnvironmentBasedAnalyzerProperties implements AnalyzerProperties {
 
   private static final String NAME_PROPERTY_KEY = "name";
   private static final String VERSION_PROPERTY_KEY = "version";
+  private static final String PORT_PROPERTY_KEY = "server.port";
 
   private final Environment environment;
 
@@ -19,12 +20,17 @@ public class EnvironmentBasedAnalyzerProperties implements AnalyzerProperties {
 
   @Override
   public String getName() {
-    return environment.getProperty(NAME_PROPERTY_KEY);
+    return environment.getRequiredProperty(NAME_PROPERTY_KEY);
   }
 
   @Override
   public String getVersion() {
-    return environment.getProperty(VERSION_PROPERTY_KEY);
+    return environment.getRequiredProperty(VERSION_PROPERTY_KEY);
+  }
+
+  @Override
+  public int getPort() {
+    return Integer.parseInt(environment.getRequiredProperty(PORT_PROPERTY_KEY));
   }
 
 }

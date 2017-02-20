@@ -22,4 +22,10 @@ public class AnalyzerPropertiesTest extends AnalyzerIntegrationBaseTest {
     Assert.assertEquals("0.1", version);
   }
 
+  @Test
+  public void testPort() {
+    int port = properties.getPort();
+    Assert.assertEquals(8443, port);
+  }
+
 }

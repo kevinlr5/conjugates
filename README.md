@@ -15,9 +15,10 @@ A server that can analyze the Russell Conjugation of inputs
 
 ## Builds
 
-- Unbreakable test build: `./gradlew clean check build`
+- Unbreakable test build: `./gradlew clean check build asciidoctor`
 - Run server: `./gradlew clean bootRun`
 - Build runnable server jar: `./gradlew clean build`
+- Build server html documentation: `./gradlew clean asciidoctor`
 
 ## CI
 

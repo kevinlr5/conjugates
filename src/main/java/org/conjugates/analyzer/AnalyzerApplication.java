@@ -44,11 +44,12 @@ public class AnalyzerApplication {
   public HttpMessageConverters customConverters() {
     MappingJackson2HttpMessageConverter jacksonConverter =
         new MappingJackson2HttpMessageConverter();
-    jacksonConverter.setObjectMapper(createObjectMapper());
+    jacksonConverter.setObjectMapper(getObjectMapper());
     return new HttpMessageConverters(jacksonConverter);
   }
 
-  private static ObjectMapper createObjectMapper() {
+  @Bean
+  public ObjectMapper getObjectMapper() {
     final ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     objectMapper.enable(JsonGenerator.Feature.WRITE_NUMBERS_AS_STRINGS);
@@ -56,4 +57,5 @@ public class AnalyzerApplication {
     objectMapper.enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN);
     return objectMapper;
   }
+
 }
