@@ -30,7 +30,8 @@ public class InfoController {
   @ResponseBody
   public InfoResponse info() {
     LOG.debug("Call to info made");
-    return new InfoResponse(properties.getName(), properties.getVersion());
+    return new InfoResponse(properties.getName(), properties.getVersion(),
+        properties.getCommitHash());
   }
 
   @RequestMapping(value = "/unauthorized", method = RequestMethod.GET)

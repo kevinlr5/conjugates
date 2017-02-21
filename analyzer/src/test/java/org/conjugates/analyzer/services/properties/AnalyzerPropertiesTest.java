@@ -19,7 +19,13 @@ public class AnalyzerPropertiesTest extends AnalyzerIntegrationBaseTest {
   @Test
   public void testVersion() {
     String version = properties.getVersion();
-    Assert.assertEquals("0.1", version);
+    Assert.assertNotNull(version);
+  }
+
+  @Test
+  public void testCommitHash() {
+    String commitHash = properties.getCommitHash();
+    Assert.assertNotNull(commitHash);
   }
 
   @Test

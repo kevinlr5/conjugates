@@ -24,7 +24,7 @@ public class InfoControllerTest extends AnalyzerIntegrationBaseTest {
         .andExpect(status().isOk())
         .andReturn();
     InfoResponse response = http.deserialize(result, InfoResponse.class);
-    Assert.assertEquals(new InfoResponse("Analyzer", "0.1"), response);
+    Assert.assertEquals("Analyzer", response.getName());
   }
 
   @Test

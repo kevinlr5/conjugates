@@ -9,11 +9,19 @@ buildscript {
     }
 }
 
-project.version = version
+apply from: 'git.gradle'
+
+project.version = gitDescribe()
+ext {
+    gitCommit = gitCommitHash()
+}
 
 subprojects {
     group = 'org.conjugates'
     version = rootProject.version
+    ext {
+        gitCommit = rootProject.ext.gitCommit
+    }
 }
 
 project(":analyzer") {
@@ -46,7 +54,13 @@ project(":analyzer") {
         testCompile('org.springframework.boot:spring-boot-starter-test')
         testCompile('org.springframework.restdocs:spring-restdocs-mockmvc')
     }
-    
+
+    processResources {
+        filesMatching("application.properties") { props ->
+            props.expand(version: project.version, commit: project.gitCommit)
+        }
+    }
+
     test {
         outputs.dir snippetsDir
     }
@@ -56,5 +70,5 @@ project(":analyzer") {
         inputs.dir snippetsDir
         dependsOn test
     }
-    
+
 }
