@@ -6,6 +6,8 @@ public interface AnalyzerProperties {
 
   String getVersion();
 
+  String getCommitHash();
+
   int getPort();
 
 }

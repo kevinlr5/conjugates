@@ -3,6 +3,8 @@ machine:
     version:
       oraclejdk8
 dependencies:
+  pre:
+    - "[[ ! -s \"$(git rev-parse --git-dir)/shallow\" ]] || git fetch --unshallow"
   override:
     - echo 'skipping dependencies'
 test:

@@ -31,7 +31,8 @@ public class InfoControllerDocsTest extends AnalyzerIntegrationBaseTest {
         .andDo(http.document(
             responseFields(
                 fieldWithPath("name").description("The name of the service"),
-                fieldWithPath("version").description("The version of the service"))));
+                fieldWithPath("version").description("The version of the service"),
+                fieldWithPath("commitHash").description("The commit built"))));
   }
 
   @Test
