@@ -10,7 +10,9 @@ public class InfoResponse {
   private final String commitHash;
 
   @JsonCreator
-  public InfoResponse(@JsonProperty("name") String name, @JsonProperty("version") String version,
+  public InfoResponse(
+      @JsonProperty("name") String name,
+      @JsonProperty("version") String version,
       @JsonProperty("commitHash") String commitHash) {
     this.name = name;
     this.version = version;

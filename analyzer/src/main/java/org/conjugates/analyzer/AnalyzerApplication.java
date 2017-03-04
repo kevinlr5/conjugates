@@ -21,7 +21,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @Configuration
 @EnableAutoConfiguration
 @ComponentScan
-@PropertySource(value = "classpath:application.properties")
+@PropertySource(value = "classpath:dev.properties")
 public class AnalyzerApplication {
 
   public static void main(String[] args) {
