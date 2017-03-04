@@ -7,20 +7,33 @@ A server that can analyze the Russell Conjugation of inputs
 
 ## Developer Setup
 
+### Java
+
+1. Install jdk 8
+
 ### Eclipse
 
 1. Install the latest version of eclipse
 2. Import and use the eclipse style settings in ide-resources/eclipse-java-google-style.xml
 3. Run `./gradlew clean eclipse` and import the projects
 
+### Docker
+
+1. Install docker
+
 ## Builds
 
 Conjugates uses gradle as its build system. The gradle wrapper is committed to the repo. Additionally, the build configuration uses a multi-project build.
 
-- Unbreakable test build: `./gradlew clean build asciidoctor`
+- Unbreakable test build: `./gradlew clean check`
 - Run server: `./gradlew clean bootRun`
-- Build runnable server jar: `./gradlew clean build`
+- Build runnable docker image: `./gradlew clean buildImage`
 - Build server html documentation: `./gradlew clean asciidoctor`
+
+### Containers
+- Applications are containerized using docker
+- The configuration for the servers including the Dockerfiles are in containers/service_name
+- After constructing the docker image, run it and bind a port to your computer. Ex: `docker run -p 8443:8443 47a621dc1a13`
 
 ## CI
 

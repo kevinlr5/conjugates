@@ -1,4 +1,6 @@
 machine:
+  services:
+    - docker
   java:
     version:
       oraclejdk8
@@ -9,4 +11,4 @@ dependencies:
     - echo 'skipping dependencies'
 test:
   override:
-    - ./gradlew clean build asciidoctor
+    - ./gradlew clean check
