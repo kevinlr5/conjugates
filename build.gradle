@@ -10,7 +10,9 @@ buildscript {
     }
 }
 
+import com.bmuschko.gradle.docker.DockerRegistryCredentials
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
 import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerInspectContainer
@@ -82,8 +84,22 @@ project(":analyzer") {
 
     task buildImage(type: DockerBuildImage) {
         dependsOn assemble, prepareImageBuildDir
-        inputDir = file(imageBuildDir)
-        tag "conjugates/analyzer:${project.version}"
+        inputDir = imageBuildDir
+        tag "kevinlr5/analyzer:${project.version}"
+    }
+
+    task removeImage(type: DockerRemoveImage) {
+        targetImageId { buildImage.getImageId() }
+    }
+
+    task pushImage(type: DockerPushImage) {
+        dependsOn buildImage
+        imageName "kevinlr5/analyzer"
+        tag project.version
+        registryCredentials = new DockerRegistryCredentials()
+        registryCredentials.username = System.getProperty("dockerUsername")
+        registryCredentials.password = System.getProperty("dockerPassword")
+        finalizedBy removeImage
     }
 
     task createContainer(type: DockerCreateContainer) {
@@ -106,11 +122,6 @@ project(":analyzer") {
         targetContainerId { createContainer.getContainerId() }
     }
 
-    task removeImage(type: DockerRemoveImage) {
-        dependsOn removeContainer
-        targetImageId { buildImage.getImageId() }
-    }
-
     task testContainer() {
         dependsOn startContainer
         doFirst {
@@ -124,11 +135,7 @@ project(":analyzer") {
                throw new RuntimeException("Analyzer didn't start successfully")
             }
         }
-        finalizedBy removeImage
-    }
-
-    task dockerBuild() {
-        dependsOn testContainer
+        finalizedBy removeContainer, removeImage
     }
 
     test {
@@ -141,7 +148,7 @@ project(":analyzer") {
         dependsOn test
     }
 
-    tasks.check.dependsOn dockerBuild, asciidoctor
+    tasks.check.dependsOn testContainer, asciidoctor
     // CIRCLE CI cannot remove docker images/containers
     [tasks.removeContainer, tasks.removeImage].each { t -> t.enabled = !System.getenv("CIRCLECI") }
 
