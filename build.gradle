@@ -97,13 +97,12 @@ project(":analyzer") {
         imageName "kevinlr5/analyzer"
         tag project.version
         registryCredentials = new DockerRegistryCredentials()
-        registryCredentials.username = System.getProperty("dockerUsername")
-        registryCredentials.password = System.getProperty("dockerPassword")
-        finalizedBy removeImage
+        registryCredentials.username = System.getenv("DOCKER_USERNAME")
+        registryCredentials.password = System.getenv("DOCKER_PASSWORD")
     }
 
     task createContainer(type: DockerCreateContainer) {
-        dependsOn buildImage
+        dependsOn pushImage
         targetImageId { buildImage.getImageId() }
         portBindings = ['8443:8443']
     }
