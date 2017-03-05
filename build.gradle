@@ -104,7 +104,7 @@ project(":analyzer") {
     task createContainer(type: DockerCreateContainer) {
         dependsOn pushImage
         targetImageId { buildImage.getImageId() }
-        portBindings = ['8443:8443']
+        portBindings = ['8080:8080']
     }
 
     task startContainer(type: DockerStartContainer) {
@@ -127,7 +127,7 @@ project(":analyzer") {
             sleep(20000)
         }
         doLast {
-            def p = ['curl', '-k', "https://localhost:8443/api/info/"].execute()
+            def p = ['curl', '-k', "http://localhost:8080/api/info/"].execute()
             def json = new JsonSlurper().parseText(p.text)
             def version = json['version']
             if(version != project.version) {
