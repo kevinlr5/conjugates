@@ -1,0 +1,63 @@
+= Conjugates Analyzer REST Service API
+:doctype: book
+:icons: font
+:source-highlighter: highlightjs
+:toc: left
+:toclevels: 4
+:sectlinks:
+
+= Resources
+
+== Info API
+
+A resource that provides information about the service
+
+=== Get service information
+
+==== Request structure
+
+include::{snippets}/info-controller-docs-test/info-example/http-request.adoc[]
+
+==== Response body fields
+
+include::{snippets}/info-controller-docs-test/info-example/response-fields.adoc[]
+
+==== Example response
+
+include::{snippets}/info-controller-docs-test/info-example/http-response.adoc[]
+
+==== CURL request
+
+include::{snippets}/info-controller-docs-test/info-example/curl-request.adoc[]
+
+=== Test unauthorized endpoint
+
+==== Request structure
+
+include::{snippets}/info-controller-docs-test/info-unauthorized-example/http-request.adoc[]
+
+==== Example response
+
+include::{snippets}/info-controller-docs-test/info-unauthorized-example/http-response.adoc[]
+
+==== CURL request
+
+include::{snippets}/info-controller-docs-test/info-unauthorized-example/curl-request.adoc[]
+
+=== Test post endpoint
+
+==== Example request
+
+include::{snippets}/info-controller-docs-test/info-testpost-example/http-request.adoc[]
+
+==== Request body fields
+
+include::{snippets}/info-controller-docs-test/info-testpost-example/request-fields.adoc[]
+
+==== Example response
+
+include::{snippets}/info-controller-docs-test/info-testpost-example/http-response.adoc[]
+
+==== CURL request
+
+include::{snippets}/info-controller-docs-test/info-testpost-example/curl-request.adoc[]
