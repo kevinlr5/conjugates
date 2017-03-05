@@ -1,0 +1,25 @@
+{
+    "family": "analyzer",
+    "volumes": [],
+    "containerDefinitions": [
+        {
+            "name": "analyzer",
+            "image": "kevinlr5/analyzer:0.1.1-6-g751ccec",
+            "cpu": "10",
+            "memory": "750",
+            "essential": true,
+            "portMappings": [
+                {
+                    "hostPort": "8080",
+                    "containerPort": "8080",
+                    "protocol": "tcp"
+                }
+            ],
+            "links": [],
+            "command": [],
+            "entryPoint": [],
+            "environment": [],
+            "mountPoints": []
+        }
+    ]
+}
