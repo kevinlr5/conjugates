@@ -12,6 +12,12 @@ buildscript {
 
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
+import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerInspectContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerStopContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
+import groovy.json.JsonSlurper
 
 apply from: 'git.gradle'
 
@@ -40,18 +46,18 @@ project(":analyzer") {
        toolVersion = checkstyleToolVersion
        configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
     }
-    
+
     ext {
         snippetsDir = file('build/generated-snippets')
         imageBuildDir = file("${project.buildDir}/image")
     }
-    
+
     sourceCompatibility = 1.8
-    
+
     repositories {
         mavenCentral()
     }
-    
+
     dependencies {
         compile('org.springframework.boot:spring-boot-starter-aop')
         // compile('org.springframework.boot:spring-boot-starter-security')
@@ -73,26 +79,62 @@ project(":analyzer") {
         }
         into(imageBuildDir)
     }
-    
+
     task buildImage(type: DockerBuildImage) {
         dependsOn assemble, prepareImageBuildDir
         inputDir = file(imageBuildDir)
         tag "conjugates/analyzer:${project.version}"
-    } 
+    }
+
+    task createContainer(type: DockerCreateContainer) {
+        dependsOn buildImage
+        targetImageId { buildImage.getImageId() }
+        portBindings = ['8443:8443']
+    }
+
+    task startContainer(type: DockerStartContainer) {
+        dependsOn createContainer
+        targetContainerId { createContainer.getContainerId() }
+    }
+
+    task stopContainer(type: DockerStopContainer) {
+        targetContainerId { createContainer.getContainerId() }
+    }
+
+    task removeContainer(type: DockerRemoveContainer) {
+        dependsOn stopContainer
+        targetContainerId { createContainer.getContainerId() }
+    }
 
     task removeImage(type: DockerRemoveImage) {
-        dependsOn buildImage
-        targetImageId { buildImage.imageId }
+        dependsOn removeContainer
+        targetImageId { buildImage.getImageId() }
+    }
+
+    task testContainer() {
+        dependsOn startContainer
+        doFirst {
+            sleep(20000)
+        }
+        doLast {
+            def p = ['curl', '-k', "https://localhost:8443/api/info/"].execute()
+            def json = new JsonSlurper().parseText(p.text)
+            def version = json['version']
+            if(version != project.version) {
+               throw new RuntimeException("Analyzer didn't start successfully")
+            }
+        }
+        finalizedBy removeImage
     }
 
     task dockerBuild() {
-        dependsOn removeImage
+        dependsOn testContainer
     }
 
     test {
         outputs.dir snippetsDir
     }
-    
+
     asciidoctor {
         attributes 'snippets': snippetsDir
         inputs.dir snippetsDir
@@ -101,6 +143,6 @@ project(":analyzer") {
 
     tasks.check.dependsOn dockerBuild, asciidoctor
     // CIRCLE CI cannot remove docker images/containers
-    tasks.removeImage.enabled = !System.getenv("CIRCLECI")
+    [tasks.removeContainer, tasks.removeImage].each { t -> t.enabled = !System.getenv("CIRCLECI") }
 
 }
