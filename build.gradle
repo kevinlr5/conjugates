@@ -36,6 +36,13 @@ subprojects {
     }
 }
 
+task deploy(type: Exec) {
+    workingDir './infrastructure/deployment/'
+    executable 'terraform'
+    args 'apply'
+    environment 'TF_VAR_analyzer_docker_version', "${project.version}"
+}
+
 project(":analyzer") {
     apply plugin: 'java'
     apply plugin: 'eclipse'
@@ -70,7 +77,7 @@ project(":analyzer") {
     }
 
     task prepareImageBuildDir(type: Copy) {
-        from("${project.rootDir}/containers/analyzer") {
+        from("${project.rootDir}/infrastructure/analyzer") {
             filesMatching("application.properties") { props ->
                 props.expand(version: project.version, commit: project.gitCommit)
             }
@@ -127,7 +134,7 @@ project(":analyzer") {
             sleep(20000)
         }
         doLast {
-            def p = ['curl', '-k', "http://localhost:8080/api/info/"].execute()
+            def p = ['curl', "http://localhost:8080/api/info/"].execute()
             def json = new JsonSlurper().parseText(p.text)
             def version = json['version']
             if(version != project.version) {

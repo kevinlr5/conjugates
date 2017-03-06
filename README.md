@@ -42,6 +42,7 @@ Every PR to develop kicks off a CircleCI build that runs the unbreakable build
 ## Versioning and Releases
 
 ### Branching and Releasing
+
 This repository uses the git flow branching model: http://nvie.com/posts/a-successful-git-branching-model/.
 
 - To release, merge develop into master and tag the merge commit in master. Then push tags.
@@ -53,3 +54,21 @@ This repository uses the git flow branching model: http://nvie.com/posts/a-succe
 ### Versioning
 
 - Versions conform to semantic versioning: http://semver.org/
+
+## Deploying the cluster
+
+- The conjugates cluster is deployed to Amazon Web Services using the deployment orchestrator terraform: https://www.terraform.io/
+- Deployment occurs in multiple stages described below
+
+### Install terraform
+
+- https://www.terraform.io/
+
+### Export variables to environment
+
+- TF_VAR_aws_access_key: the AWS access key of the IAM account to be used for deployment
+- TF_VAR_aws_secret_key: the AWS secret key of the IAM account to be used for deployment
+
+### Run deploy task using gradle
+
+- `./gradlew clean build deploy`
