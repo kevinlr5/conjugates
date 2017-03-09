@@ -37,9 +37,16 @@ subprojects {
 }
 
 task deploy(type: Exec) {
-    workingDir './infrastructure/deployment/'
+    workingDir 'infrastructure/deployment/'
     executable 'terraform'
     args 'apply'
+    environment 'TF_VAR_analyzer_docker_version', "${project.version}"
+}
+
+task destroyDeploy(type: Exec) {
+    workingDir 'infrastructure/deployment/'
+    executable 'terraform'
+    args = ['destroy', '-force']
     environment 'TF_VAR_analyzer_docker_version', "${project.version}"
 }
 

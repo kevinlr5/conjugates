@@ -172,6 +172,14 @@ resource "aws_security_group" "instance_sg" {
 
 ## EC2
 
+data "template_file" "cloud_config" {
+  template = "${file("${path.module}/cloud_config.sh")}"
+
+  vars {
+    ecs_cluster_name = "${aws_ecs_cluster.conjugates.name}"
+  }
+}
+
 resource "aws_launch_configuration" "app" {
   security_groups = [
     "${aws_security_group.instance_sg.id}",
@@ -181,6 +189,7 @@ resource "aws_launch_configuration" "app" {
   instance_type               = "${var.instance_type}"
   iam_instance_profile        = "${aws_iam_instance_profile.app.name}"
   associate_public_ip_address = true
+  user_data                   = "${data.template_file.cloud_config.rendered}"
 
   lifecycle {
     create_before_destroy = true
