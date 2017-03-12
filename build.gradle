@@ -24,30 +24,47 @@ import groovy.json.JsonSlurper
 apply from: 'git.gradle'
 
 project.version = gitDescribe()
+
 ext {
     gitCommit = gitCommitHash()
+    dockerUsername = System.getenv("DOCKER_USERNAME")
+    terraformEnvironment = [
+        'TF_VAR_aws_access_key_deployment': System.getenv("AWS_ACCESS_KEY_DEPLOYMENT"),
+        'TF_VAR_aws_secret_key_deployment': System.getenv("AWS_SECRET_KEY_DEPLOYMENT"),
+        'TF_VAR_version': project.version,
+        'TF_VAR_deploy_id': project.hasProperty('deployId') ? deployId : project.version.replace(".", ""),
+        'TF_VAR_docker_username': dockerUsername
+    ]
 }
 
 subprojects {
     group = 'org.conjugates'
     version = rootProject.version
     ext {
+        dockerUsername = rootProject.dockerUsername
         gitCommit = rootProject.ext.gitCommit
     }
+}
+
+task plan(type: Exec) {
+    workingDir 'infrastructure/deployment/'
+    executable 'terraform'
+    args 'plan'
+    environment = terraformEnvironment
 }
 
 task deploy(type: Exec) {
     workingDir 'infrastructure/deployment/'
     executable 'terraform'
     args 'apply'
-    environment 'TF_VAR_analyzer_docker_version', "${project.version}"
+    environment = terraformEnvironment
 }
 
 task destroyDeploy(type: Exec) {
     workingDir 'infrastructure/deployment/'
     executable 'terraform'
     args = ['destroy', '-force']
-    environment 'TF_VAR_analyzer_docker_version', "${project.version}"
+    environment = terraformEnvironment
 }
 
 project(":analyzer") {
@@ -99,7 +116,7 @@ project(":analyzer") {
     task buildImage(type: DockerBuildImage) {
         dependsOn assemble, prepareImageBuildDir
         inputDir = imageBuildDir
-        tag "kevinlr5/analyzer:${project.version}"
+        tag "${dockerUsername}/analyzer:${project.version}"
     }
 
     task removeImage(type: DockerRemoveImage) {
@@ -108,10 +125,10 @@ project(":analyzer") {
 
     task pushImage(type: DockerPushImage) {
         dependsOn buildImage
-        imageName "kevinlr5/analyzer"
+        imageName "${dockerUsername}/analyzer"
         tag project.version
         registryCredentials = new DockerRegistryCredentials()
-        registryCredentials.username = System.getenv("DOCKER_USERNAME")
+        registryCredentials.username = dockerUsername
         registryCredentials.password = System.getenv("DOCKER_PASSWORD")
     }
 

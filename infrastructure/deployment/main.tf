@@ -1,8 +1,8 @@
 ## Provider
 
 provider "aws" {
-  access_key = "${var.aws_access_key}"
-  secret_key = "${var.aws_secret_key}"
+  access_key = "${var.aws_access_key_deployment}"
+  secret_key = "${var.aws_secret_key_deployment}"
   region     = "${var.region}"
 }
 
@@ -172,8 +172,8 @@ resource "aws_security_group" "instance_sg" {
 
 ## EC2
 
-data "template_file" "cloud_config" {
-  template = "${file("${path.module}/cloud_config.sh")}"
+data "template_file" "user_data" {
+  template = "${file("${path.module}/user_data.sh")}"
 
   vars {
     ecs_cluster_name = "${aws_ecs_cluster.conjugates.name}"
@@ -189,7 +189,7 @@ resource "aws_launch_configuration" "app" {
   instance_type               = "${var.instance_type}"
   iam_instance_profile        = "${aws_iam_instance_profile.app.name}"
   associate_public_ip_address = true
-  user_data                   = "${data.template_file.cloud_config.rendered}"
+  user_data                   = "${data.template_file.user_data.rendered}"
 
   lifecycle {
     create_before_destroy = true
@@ -234,7 +234,8 @@ data "template_file" "analyzer_task_definition" {
   template = "${file("task_definitions/analyzer.json")}"
 
   vars {
-    analyzer_docker_version = "${var.analyzer_docker_version}"
+    docker_username = "${var.docker_username}"
+    version = "${var.version}"
   }
 }
 

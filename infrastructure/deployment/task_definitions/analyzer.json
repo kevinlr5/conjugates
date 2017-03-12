@@ -1,7 +1,7 @@
 [
     {
         "name": "analyzer",
-        "image": "kevinlr5/analyzer:${analyzer_docker_version}",
+        "image": "${docker_username}/analyzer:${version}",
         "cpu": 256,
         "memory": 512,
         "essential": true,
