@@ -88,12 +88,12 @@ EOF
 }
 
 resource "aws_iam_instance_profile" "app" {
-  name  = "analyzer-ecs-instprofile"
+  name  = "analyzer-ecs-instance-profile"
   roles = ["${aws_iam_role.app_instance.name}"]
 }
 
 resource "aws_iam_role" "app_instance" {
-  name = "analyzer-ecs--instance-role"
+  name = "analyzer-ecs-instance-role"
 
   assume_role_policy = <<EOF
 {
