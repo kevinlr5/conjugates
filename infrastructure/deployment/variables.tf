@@ -1,9 +1,9 @@
-variable "aws_access_key" {
-  description = "The AWS access key."
+variable "aws_access_key_deployment" {
+  description = "The AWS access key for deployment."
 }
 
-variable "aws_secret_key" {
-  description = "The AWS secret key."
+variable "aws_secret_key_deployment" {
+  description = "The AWS secret key for deployment."
 }
 
 variable "region" {
@@ -21,8 +21,16 @@ variable "ecs_cluster_name" {
   default = "conjugates"
 }
 
-variable "analyzer_docker_version" {
+variable "docker_username" {
+  description = "The name of the dockerhub account."
+}
+
+variable "version" {
   description = "The version of the docker image to use when provisioning the analyzer."
+}
+
+variable "deploy_id" {
+  description = "The unique identifier of the deployment."
 }
 
 /* ECS optimized AMIs per region */
