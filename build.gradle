@@ -28,12 +28,16 @@ project.version = gitDescribe()
 ext {
     gitCommit = gitCommitHash()
     dockerUsername = System.getenv("DOCKER_USERNAME")
-    terraformEnvironment = [
+    terraformDeploymentEnvironment = [
         'TF_VAR_aws_access_key_deployment': System.getenv("AWS_ACCESS_KEY_DEPLOYMENT"),
         'TF_VAR_aws_secret_key_deployment': System.getenv("AWS_SECRET_KEY_DEPLOYMENT"),
         'TF_VAR_version': project.version,
         'TF_VAR_deploy_id': project.hasProperty('deployId') ? deployId : project.version.replace(".", ""),
         'TF_VAR_docker_username': dockerUsername
+    ]
+    terraformAccountSetupEnvironment = [
+        'TF_VAR_aws_access_key_root': System.getenv("AWS_ACCESS_KEY_ROOT"),
+        'TF_VAR_aws_secret_key_root': System.getenv("AWS_SECRET_KEY_ROOT"),
     ]
 }
 
@@ -46,25 +50,39 @@ subprojects {
     }
 }
 
+task createAwsAccount(type: Exec) {
+    workingDir 'infrastructure/aws_account_setup'
+    executable 'terraform'
+    args 'apply'
+    environment = terraformAccountSetupEnvironment
+}
+
+task destroyAwsAccount(type: Exec) {
+    workingDir 'infrastructure/aws_account_setup'
+    executable 'terraform'
+    args = ['destroy', '-force']
+    environment = terraformAccountSetupEnvironment
+}
+
 task plan(type: Exec) {
     workingDir 'infrastructure/deployment/'
     executable 'terraform'
     args 'plan'
-    environment = terraformEnvironment
+    environment = terraformDeploymentEnvironment
 }
 
 task deploy(type: Exec) {
     workingDir 'infrastructure/deployment/'
     executable 'terraform'
     args 'apply'
-    environment = terraformEnvironment
+    environment = terraformDeploymentEnvironment
 }
 
 task destroyDeploy(type: Exec) {
     workingDir 'infrastructure/deployment/'
     executable 'terraform'
     args = ['destroy', '-force']
-    environment = terraformEnvironment
+    environment = terraformDeploymentEnvironment
 }
 
 project(":analyzer") {
