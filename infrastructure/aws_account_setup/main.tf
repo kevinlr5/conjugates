@@ -88,6 +88,7 @@ resource "aws_iam_group_policy" "explicit-admin" {
         "ec2:RunInstances",
         "ec2:TerminateInstances",
         "ecs:*",
+        "elasticloadbalancing:AddTags",
         "elasticloadbalancing:ApplySecurityGroupsToLoadBalancer",
         "elasticloadbalancing:AttachLoadBalancerToSubnets",
         "elasticloadbalancing:ConfigureHealthCheck",
