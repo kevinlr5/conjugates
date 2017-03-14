@@ -12,6 +12,12 @@ data "aws_availability_zones" "available" {}
 
 resource "aws_vpc" "main" {
   cidr_block = "10.10.0.0/16"
+
+  tags {
+    deploy_id   = "${var.deploy_id}"
+    deploy_type = "${var.deploy_type}"
+    version     = "${var.version}"
+  }
 }
 
 resource "aws_subnet" "main" {
@@ -19,10 +25,22 @@ resource "aws_subnet" "main" {
   cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 8, count.index)}"
   availability_zone = "${data.aws_availability_zones.available.names[count.index]}"
   vpc_id            = "${aws_vpc.main.id}"
+
+  tags {
+    deploy_id   = "${var.deploy_id}"
+    deploy_type = "${var.deploy_type}"
+    version     = "${var.version}"
+  }
 }
 
 resource "aws_internet_gateway" "gw" {
   vpc_id = "${aws_vpc.main.id}"
+
+  tags {
+    deploy_id   = "${var.deploy_id}"
+    deploy_type = "${var.deploy_type}"
+    version     = "${var.version}"
+  }
 }
 
 resource "aws_route_table" "r" {
@@ -31,6 +49,12 @@ resource "aws_route_table" "r" {
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = "${aws_internet_gateway.gw.id}"
+  }
+
+  tags {
+    deploy_id   = "${var.deploy_id}"
+    deploy_type = "${var.deploy_type}"
+    version     = "${var.version}"
   }
 }
 
@@ -43,7 +67,7 @@ resource "aws_route_table_association" "a" {
 ## IAM
 
 resource "aws_iam_role" "ecs_service" {
-  name = "analyzer_ecs_role"
+  name = "analyzer-ecs-role-${var.deploy_id}"
 
   assume_role_policy = <<EOF
 {
@@ -63,7 +87,7 @@ EOF
 }
 
 resource "aws_iam_role_policy" "ecs_service" {
-  name = "analyzer_ecs_policy"
+  name = "analyzer-ecs-policy-${var.deploy_id}"
   role = "${aws_iam_role.ecs_service.name}"
 
   policy = <<EOF
@@ -88,12 +112,12 @@ EOF
 }
 
 resource "aws_iam_instance_profile" "app" {
-  name  = "analyzer-ecs-instance-profile"
+  name  = "analyzer-ecs-instance-profile-${var.deploy_id}"
   roles = ["${aws_iam_role.app_instance.name}"]
 }
 
 resource "aws_iam_role" "app_instance" {
-  name = "analyzer-ecs-instance-role"
+  name = "analyzer-ecs-instance-role-${var.deploy_id}"
 
   assume_role_policy = <<EOF
 {
@@ -117,7 +141,7 @@ data "template_file" "instance_profile" {
 }
 
 resource "aws_iam_role_policy" "instance" {
-  name   = "AnalyzerEcsInstanceRole"
+  name   = "AnalyzerEcsInstanceRole-${var.deploy_id}"
   role   = "${aws_iam_role.app_instance.name}"
   policy = "${data.template_file.instance_profile.rendered}"
 }
@@ -126,7 +150,7 @@ resource "aws_iam_role_policy" "instance" {
 
 resource "aws_security_group" "elb_sg" {
   description = "controls access to the application ELB"
-  name   = "ecs-elb-sg"
+  name   = "ecs-elb-sg-${var.deploy_id}"
   vpc_id = "${aws_vpc.main.id}"
 
   ingress {
@@ -145,11 +169,17 @@ resource "aws_security_group" "elb_sg" {
       "0.0.0.0/0",
     ]
   }
+
+  tags {
+    deploy_id   = "${var.deploy_id}"
+    deploy_type = "${var.deploy_type}"
+    version     = "${var.version}"
+  }
 }
 
 resource "aws_security_group" "instance_sg" {
   description = "controls direct access to application instances"
-  name        = "ecs-instance-sg"
+  name        = "ecs-instance-sg-${var.deploy_id}"
   vpc_id      = "${aws_vpc.main.id}"
 
   ingress {
@@ -168,6 +198,12 @@ resource "aws_security_group" "instance_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags {
+    deploy_id   = "${var.deploy_id}"
+    deploy_type = "${var.deploy_type}"
+    version     = "${var.version}"
+  }
 }
 
 ## EC2
@@ -185,6 +221,7 @@ resource "aws_launch_configuration" "app" {
     "${aws_security_group.instance_sg.id}",
   ]
 
+  name                        = "conjugates-${var.deploy_id}"
   image_id                    = "${lookup(var.amis, var.region)}"
   instance_type               = "${var.instance_type}"
   iam_instance_profile        = "${aws_iam_instance_profile.app.name}"
@@ -197,16 +234,32 @@ resource "aws_launch_configuration" "app" {
 }
 
 resource "aws_autoscaling_group" "app" {
-  name                 = "ecs-asg"
+  name                 = "ecs-asg-${var.deploy_id}"
   vpc_zone_identifier  = ["${aws_subnet.main.*.id}"]
   min_size             = 1
   max_size             = 2
   desired_capacity     = 1
   launch_configuration = "${aws_launch_configuration.app.name}"
+
+  tag {
+    key                 = "deploy_id" 
+    value               = "${var.deploy_id}"
+    propagate_at_launch = true
+  }
+  tag {
+    key                 = "deploy_type"
+    value               = "${var.deploy_type}"
+    propagate_at_launch = true
+  }
+  tag {
+    key                 = "version"
+    value               = "${var.version}"
+    propagate_at_launch = true
+  }
 }
 
 resource "aws_elb" "analyzer-elb" {
-  name               = "analyzer-elb"
+  name               = "analyzer-elb-${var.deploy_id}"
   subnets            = ["${aws_subnet.main.*.id}"]
   security_groups    = [
     "${aws_security_group.elb_sg.id}",
@@ -228,6 +281,12 @@ resource "aws_elb" "analyzer-elb" {
   }
 
   connection_draining = false
+
+  tags {
+    deploy_id   = "${var.deploy_id}"
+    deploy_type = "${var.deploy_type}"
+    version     = "${var.version}"
+  }
 }
 
 data "template_file" "analyzer_task_definition" {
@@ -236,16 +295,17 @@ data "template_file" "analyzer_task_definition" {
   vars {
     docker_username = "${var.docker_username}"
     version = "${var.version}"
+    deploy_id = "${var.deploy_id}"
   }
 }
 
 resource "aws_ecs_task_definition" "analyzer" {
-  family                = "analyzer"
+  family                = "analyzer-${var.deploy_id}"
   container_definitions = "${data.template_file.analyzer_task_definition.rendered}"
 }
 
 resource "aws_ecs_service" "analyzer" {
-  name            = "analyzer"
+  name            = "analyzer-${var.deploy_id}"
   cluster         = "${aws_ecs_cluster.conjugates.id}"
   task_definition = "${aws_ecs_task_definition.analyzer.arn}"
   desired_count   = 1
@@ -253,7 +313,7 @@ resource "aws_ecs_service" "analyzer" {
 
   load_balancer {
     elb_name       = "${aws_elb.analyzer-elb.id}"
-    container_name = "analyzer"
+    container_name = "analyzer-${var.deploy_id}"
     container_port = 8080
   }
 
@@ -264,5 +324,5 @@ resource "aws_ecs_service" "analyzer" {
 }
 
 resource "aws_ecs_cluster" "conjugates" {
-  name = "${var.ecs_cluster_name}"
+  name = "${var.ecs_cluster_name}-${var.deploy_id}"
 }

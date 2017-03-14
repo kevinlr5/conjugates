@@ -34,13 +34,26 @@ subprojects {
     version = rootProject.version
 }
 
+def generateDeployId(project, deployType) {
+    if(project.hasProperty('deployId')) {
+        return deployId
+    } else {
+        def rnd = new Random();
+        def n = 100000 + rnd.nextInt(900000);
+        return deployType + "-" + n
+    }
+}
+
 project(":infrastructure") {
+
     ext {
+        deployType = project.hasProperty('deployType') ? deployType : 'test'
         terraformDeploymentEnvironment = [
             'TF_VAR_aws_access_key_deployment': System.getenv("AWS_ACCESS_KEY_DEPLOYMENT"),
             'TF_VAR_aws_secret_key_deployment': System.getenv("AWS_SECRET_KEY_DEPLOYMENT"),
             'TF_VAR_version': project.version,
-            'TF_VAR_deploy_id': project.hasProperty('deployId') ? deployId : project.version.replace(".", "-"),
+            'TF_VAR_deploy_id': generateDeployId(project, deployType),
+            'TF_VAR_deploy_type': deployType,
             'TF_VAR_docker_username': dockerUsername
         ]
         terraformAccountSetupEnvironment = [

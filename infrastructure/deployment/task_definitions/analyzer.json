@@ -1,6 +1,6 @@
 [
     {
-        "name": "analyzer",
+        "name": "analyzer-${deploy_id}",
         "image": "${docker_username}/analyzer:${version}",
         "cpu": 256,
         "memory": 512,

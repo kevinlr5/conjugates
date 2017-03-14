@@ -33,6 +33,10 @@ variable "deploy_id" {
   description = "The unique identifier of the deployment."
 }
 
+variable "deploy_type" {
+  description = "The type of deployment. Non 'test' deployments are persistent core deployments"
+}
+
 /* ECS optimized AMIs per region */
 variable "amis" {
   default = {
