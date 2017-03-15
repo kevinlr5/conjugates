@@ -22,7 +22,7 @@ resource "aws_iam_group_membership" "deployer-user-membership" {
   group = "${aws_iam_group.deployer-users.name}"
 }
 
-resource "aws_iam_group_policy" "explicit-admin" {
+resource "aws_iam_group_policy" "deployers" {
     name   = "deployer"
     group  = "${aws_iam_group.deployer-users.id}"
     policy = <<EOF
@@ -127,12 +127,54 @@ resource "aws_iam_group_policy" "explicit-admin" {
         "iam:ListUsers",
         "iam:PassRole",
         "iam:PutRolePolicy",
-        "iam:RemoveRoleFromInstanceProfile"
+        "iam:RemoveRoleFromInstanceProfile",
+        "s3:ListAllMyBuckets"
       ],
       "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::${var.terraform_bucket_name}",
+        "arn:aws:s3:::${var.terraform_bucket_name}/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:ListAllMyBuckets"],
+      "Resource": ["arn:aws:s3:::*"]
     }
+
   ]
 }
 EOF
 }
 
+resource "aws_s3_bucket" "terraform_bucket" {
+    bucket = "${var.terraform_bucket_name}"
+
+    policy = <<EOF
+{
+    "Version": "2008-10-17",
+    "Statement": [
+        {
+            "Sid": "",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "${aws_iam_user.deployer.arn}"
+            },
+            "Action": "s3:*",
+            "Resource": [
+                "arn:aws:s3:::${var.terraform_bucket_name}",
+                "arn:aws:s3:::${var.terraform_bucket_name}/*"
+            ]
+        }
+    ]
+}
+EOF
+}
+
+output "terraform_bucket_name" {
+    value = "${var.terraform_bucket_name}"
+}
