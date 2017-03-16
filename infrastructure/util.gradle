@@ -19,7 +19,9 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3ObjectSummary
 import com.amazonaws.services.s3.model.S3Object;
 
 import org.apache.commons.io.FileUtils;
@@ -43,8 +45,31 @@ ext.deleteS3Object = { key, secretKey, bucketName, keyName ->
     s3client.deleteObject(bucketName, keyName)
 }
 
-ext.deleteS3Bucket = { key, secretKey, bucketName ->
+ext.emptyS3Bucket = { key, secretKey, bucketName ->
     def creds = new BasicAWSCredentials(key, secretKey)
     def s3client = new AmazonS3Client(creds)
-    s3client.deleteBucket(bucketName)
+    def objectListing = s3client.listObjects(bucketName);
+    while (true) {
+        for (Iterator<?> iterator =
+                objectListing.getObjectSummaries().iterator();
+                iterator.hasNext();) {
+            def summary = (S3ObjectSummary)iterator.next();
+            s3client.deleteObject(bucketName, summary.getKey());
+        }
+        if (objectListing.isTruncated()) {
+            objectListing = s3client.listNextBatchOfObjects(objectListing);
+        } else {
+            break;
+        }
+    };
+}
+
+ext.getAnalyzerIpAddress = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        workingDir terraformBuildDir
+        commandLine 'terraform', 'output', 'analyzer_ip_address'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
 }

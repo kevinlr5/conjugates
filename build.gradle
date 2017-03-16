@@ -33,3 +33,18 @@ ext {
 subprojects {
     version = rootProject.version
 }
+
+def retry(times, sleepTimeMillis, body) {
+  int retries = 0
+  def exceptions = []
+  while(retries++ < times) {
+    try {
+      return body.call()
+    } catch(e) {
+      exceptions << e
+      println e.message
+      sleep(sleepTimeMillis)
+    }        
+  }
+  throw new RuntimeException("Failed after $times retries", exceptions)
+}

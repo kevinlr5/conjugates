@@ -326,3 +326,7 @@ resource "aws_ecs_service" "analyzer" {
 resource "aws_ecs_cluster" "conjugates" {
   name = "${var.ecs_cluster_name}-${var.deploy_id}"
 }
+
+output "analyzer_ip_address" {
+  value = "${aws_elb.analyzer-elb.dns_name}"
+}
