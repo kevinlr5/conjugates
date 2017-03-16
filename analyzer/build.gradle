@@ -110,15 +110,18 @@ task removeContainer(type: DockerRemoveContainer) {
 
 task testContainer() {
     dependsOn startContainer
-    doFirst {
-        sleep(20000)
-    }
     doLast {
-        def p = ['curl', "http://localhost:8080/api/info/"].execute()
-        def json = new JsonSlurper().parseText(p.text)
-        def version = json['version']
-        if(version != project.version) {
-            throw new RuntimeException("Analyzer didn't start successfully")
+        retry(5, 5000) {
+            def p = ['curl', "http://localhost:8080/api/info/"].execute()
+            def text = p.text
+            if(text.empty) {
+                throw new RuntimeException("Waiting for analyzer to start")
+            }
+            def json = new JsonSlurper().parseText(text)
+            def version = json['version']
+            if(version != project.version) {
+                throw new RuntimeException("Waiting for analyzer to start")
+            }
         }
     }
     finalizedBy removeContainer, removeImage

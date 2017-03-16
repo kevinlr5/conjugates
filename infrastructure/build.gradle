@@ -1,4 +1,6 @@
-apply from: 'aws.gradle'
+import groovy.json.JsonSlurper
+
+apply from: 'util.gradle'
 
 def generateRandomNumber() {
     def rnd = new Random();
@@ -22,55 +24,71 @@ ext {
     deployType = project.hasProperty('deployType') ? deployType : 'test'
     deployId = generateDeployId(project, deployType)
     terraformStateBucketName = generateTerraformStateBucketName()
-    aws_access_key_root = System.getenv("AWS_ACCESS_KEY_ROOT")
-    aws_secret_key_root = System.getenv("AWS_SECRET_KEY_ROOT")
-    aws_access_key_deployment = System.getenv("AWS_ACCESS_KEY_DEPLOYMENT")
-    aws_secret_key_deployment = System.getenv("AWS_SECRET_KEY_DEPLOYMENT")
+    awsAccessKeyRoot = System.getenv("AWS_ACCESS_KEY_ROOT")
+    awsSecretKeyRoot = System.getenv("AWS_SECRET_KEY_ROOT")
+    awsAccessKeyDeployment = System.getenv("AWS_ACCESS_KEY_DEPLOYMENT")
+    awsSecretKeyDeployment = System.getenv("AWS_SECRET_KEY_DEPLOYMENT")
+    terraformBuildDir = "${project.buildDir}/terraform"
     terraformDeploymentEnvironment = [
-        'TF_VAR_aws_access_key_deployment': aws_access_key_deployment,
-        'TF_VAR_aws_secret_key_deployment': aws_secret_key_deployment,
+        'TF_VAR_aws_access_key_deployment': awsAccessKeyDeployment,
+        'TF_VAR_aws_secret_key_deployment': awsSecretKeyDeployment,
         'TF_VAR_version': project.version,
         'TF_VAR_deploy_id': deployId,
         'TF_VAR_deploy_type': deployType,
         'TF_VAR_docker_username': dockerUsername
     ]
     terraformAccountSetupEnvironment = [
-        'TF_VAR_aws_access_key_root': aws_access_key_root,
-        'TF_VAR_aws_secret_key_root': aws_secret_key_root,
+        'TF_VAR_aws_access_key_root': awsAccessKeyRoot,
+        'TF_VAR_aws_secret_key_root': awsSecretKeyRoot,
         'TF_VAR_terraform_bucket_name': terraformStateBucketName
     ]
 }
 
+task clean(type: Delete) {
+    delete 'build'
+}
+
+task copyAwsAccountFiles(type: Copy) {
+    from("${projectDir}/aws_account_setup")
+    into(terraformBuildDir)
+}
+
 task createAwsAccountTerraform(type: Exec) {
-    workingDir 'aws_account_setup'
+    workingDir terraformBuildDir
     executable 'terraform'
-    args 'plan'
+    args 'apply'
     environment = terraformAccountSetupEnvironment
 }
 
 task destroyAwsAccountTerraform(type: Exec) {
-    workingDir 'aws_account_setup'
+    workingDir terraformBuildDir
     executable 'terraform'
     args = ['destroy', '-force']
     environment = terraformAccountSetupEnvironment
 }
 
+task copyDeploymentFiles(type: Copy) {
+    from("${projectDir}/deployment")
+    into(terraformBuildDir)
+}
+
 task plan(type: Exec) {
-    workingDir 'deployment'
+    workingDir terraformBuildDir
     executable 'terraform'
     args 'plan'
     environment = terraformDeploymentEnvironment
+    dependsOn 'copyDeploymentFiles'
 }
 
 task deployTerraform(type: Exec) {
-    workingDir 'deployment'
+    workingDir terraformBuildDir
     executable 'terraform'
     args 'apply'
     environment = terraformDeploymentEnvironment
 }
 
 task destroyDeployTerraform(type: Exec) {
-    workingDir 'deployment'
+    workingDir terraformBuildDir
     executable 'terraform'
     args = ['destroy', '-force']
     environment = terraformDeploymentEnvironment
@@ -79,11 +97,11 @@ task destroyDeployTerraform(type: Exec) {
 task pushAccountState() {
     doLast {
         putS3Object(
-            aws_access_key_root,
-            aws_secret_key_root,
+            awsAccessKeyRoot,
+            awsSecretKeyRoot,
             terraformStateBucketName,
-            'account/state.tfstate',
-            file("${projectDir}/aws_account_setup/terraform.tfstate")
+            'account/terraform.tfstate',
+            file("${terraformBuildDir}/terraform.tfstate")
         )
     }
 }
@@ -91,24 +109,24 @@ task pushAccountState() {
 task pushDeploymentState() {
     doLast {
         putS3Object(
-            aws_access_key_deployment,
-            aws_secret_key_deployment,
+            awsAccessKeyDeployment,
+            awsSecretKeyDeployment,
             terraformStateBucketName,
-            "${deployId}/state.tfstate",
-            file("${projectDir}/deployment/terraform.tfstate")
+            "${deployId}/terraform.tfstate",
+            file("${terraformBuildDir}/terraform.tfstate")
         )
     }
 }
 
 task downloadAccountState() {
     doLast {
-        def keyName = 'account/state.tfstate'
+        def keyName = 'account/terraform.tfstate'
         downloadS3Object(
-            aws_access_key_root,
-            aws_secret_key_root,
+            awsAccessKeyRoot,
+            awsSecretKeyRoot,
             terraformStateBucketName,
             keyName,
-            file("${project.buildDir}/${terraformStateBucketName}/${keyName}")
+            file("${terraformBuildDir}/terraform.tfstate")
         )
     }
 }
@@ -116,21 +134,11 @@ task downloadAccountState() {
 task downloadDeploymentState() {
     doLast {
         downloadS3Object(
-            aws_access_key_deployment,
-            aws_secret_key_deployment,
+            awsAccessKeyDeployment,
+            awsSecretKeyDeployment,
             terraformStateBucketName,
-            "${deployId}/state.tfstate",
-            file("${projectDir}/deployment/terraform.tfstate")
-        )
-    }
-}
-
-task deleteS3Bucket() {
-    doLast {
-        deleteS3Bucket(
-            aws_access_key_root,
-            aws_secret_key_root,
-            terraformStateBucketName
+            "${deployId}/terraform.tfstate",
+            file("${terraformBuildDir}/terraform.tfstate")
         )
     }
 }
@@ -138,32 +146,73 @@ task deleteS3Bucket() {
 task deleteDeploymentState() {
     doLast {
         deleteS3Object(
-            aws_access_key_deployment,
-            aws_secret_key_deployment,
+            awsAccessKeyDeployment,
+            awsSecretKeyDeployment,
             terraformStateBucketName,
-            "${deployId}/state.tfstate"
+            "${deployId}/terraform.tfstate"
+        )
+    }
+}
+
+task emptyTerraformBucket() {
+    doLast {
+        emptyS3Bucket(
+            awsAccessKeyRoot,
+            awsSecretKeyRoot,
+            terraformStateBucketName
         )
     }
 }
 
 task createAwsAccount() {
-    dependsOn 'createAwsAccountTerraform', 'pushAccountState'
+    dependsOn 'copyAwsAccountFiles', 'createAwsAccountTerraform', 'pushAccountState'
+    tasks.createAwsAccountTerraform.mustRunAfter 'copyAwsAccountFiles'
     tasks.pushAccountState.mustRunAfter 'createAwsAccountTerraform'
 }
 
 task destroyAwsAccount() {
-    dependsOn 'downloadAccountState', 'destroyAwsAccountTerraform', 'deleteS3Bucket'
-    tasks.destroyAwsAccountTerraform.mustRunAfter 'downloadAccountState'
-    tasks.deleteS3Bucket.mustRunAfter 'destroyAwsAccountTerraform'
+    dependsOn 'copyAwsAccountFiles', 'downloadAccountState', 'emptyTerraformBucket', 'destroyAwsAccountTerraform'
+    tasks.downloadAccountState.mustRunAfter 'copyAwsAccountFiles'
+    tasks.emptyTerraformBucket.mustRunAfter 'downloadAccountState'
+    tasks.destroyAwsAccountTerraform.mustRunAfter 'emptyTerraformBucket'
+}
+
+task testDeploymentUp() {
+    doLast {
+        // Retry for 5 minutes
+        retry(60, 5000) {
+            def analyzerIp = getAnalyzerIpAddress()
+            def infoEndpoint = analyzerIp + ':8080/api/info/'
+            def p = ['curl', infoEndpoint].execute()
+            def text = p.text
+            if(text.empty) {
+                throw new RuntimeException("Waiting for deployment to come up")
+            }
+            def json = new JsonSlurper().parseText(text)
+            def version = json['version']
+            if(version != project.version) {
+                throw new RuntimeException("Waiting for deployment to come up")
+            }
+            println "Deployment up!"
+        }
+    }
 }
 
 task deploy() {
-    dependsOn 'deployTerraform', 'pushDeploymentState'
+    dependsOn 'copyDeploymentFiles', 'deployTerraform', 'pushDeploymentState', 'testDeploymentUp'
+    tasks.deployTerraform.mustRunAfter 'copyDeploymentFiles'
     tasks.pushDeploymentState.mustRunAfter 'deployTerraform'
+    tasks.testDeploymentUp.mustRunAfter 'pushDeploymentState'
 }
 
 task destroyDeploy() {
-    dependsOn 'downloadDeploymentState', 'destroyDeployTerraform', 'deleteDeploymentState'
+    dependsOn 'copyDeploymentFiles', 'downloadDeploymentState', 'destroyDeployTerraform', 'deleteDeploymentState'
+    tasks.downloadDeploymentState.mustRunAfter 'copyDeploymentFiles'
     tasks.destroyDeployTerraform.mustRunAfter 'downloadDeploymentState'
     tasks.deleteDeploymentState.mustRunAfter 'destroyDeployTerraform'
+}
+
+task testDeploy() {
+    dependsOn 'deploy'
+    finalizedBy 'destroyDeployTerraform', 'deleteDeploymentState'
 }
