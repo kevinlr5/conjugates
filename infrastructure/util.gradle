@@ -26,6 +26,11 @@ import com.amazonaws.services.s3.model.S3Object;
 
 import org.apache.commons.io.FileUtils;
 
+def createS3Client(key, secretKey) {
+    def creds = new BasicAWSCredentials(key, secretKey)
+    return new AmazonS3Client(creds)
+}
+
 def createRandomNumber() {
     def rnd = new Random();
     return 100000 + rnd.nextInt(900000);
@@ -55,8 +60,7 @@ def validateDeploymentUp(terraformBuildDir) {
 }
 
 def deleteS3Object(key, secretKey, bucketName, keyName) {
-    def creds = new BasicAWSCredentials(key, secretKey)
-    def s3client = new AmazonS3Client(creds)
+    def s3client = createS3Client(key, secretKey)
     s3client.deleteObject(bucketName, keyName)
 }
 
@@ -71,8 +75,7 @@ def getAnalyzerIpAddress(terraformBuildDir) {
 }
 
 def getS3ObjectContents(key, secretKey, bucketName, keyName) {
-    def creds = new BasicAWSCredentials(key, secretKey)
-    def s3client = new AmazonS3Client(creds)
+    def s3client = createS3Client(key, secretKey)
     if(s3client.doesObjectExist(bucketName, keyName)) {
         return s3client.getObjectAsString(bucketName, keyName);
     } else {
@@ -85,21 +88,18 @@ ext.createDeployId = { deployType ->
 }
 
 ext.putS3Object = { key, secretKey, bucketName, keyName, content ->
-    def creds = new BasicAWSCredentials(key, secretKey)
-    def s3client = new AmazonS3Client(creds)       
+    def s3client = createS3Client(key, secretKey)
     s3client.putObject(bucketName, keyName, content);
 }
 
 ext.downloadS3Object = { key, secretKey, bucketName, keyName, outputFile ->
-    def creds = new BasicAWSCredentials(key, secretKey)
-    def s3client = new AmazonS3Client(creds)
+    def s3client = createS3Client(key, secretKey)
     def content = s3client.getObjectAsString(bucketName, keyName);
     FileUtils.writeStringToFile(outputFile, content)
 }
 
 ext.emptyS3Bucket = { key, secretKey, bucketName ->
-    def creds = new BasicAWSCredentials(key, secretKey)
-    def s3client = new AmazonS3Client(creds)
+    def s3client = createS3Client(key, secretKey)
     def objectListing = s3client.listObjects(bucketName);
     while (true) {
         for (Iterator<?> iterator =
@@ -128,7 +128,6 @@ ext.runTerraform = { terraformWorkingDir, terraformArgs, terraformEnvironment ->
 ext.deploy = {
     awsAccessKeyDeployment,
     awsSecretKeyDeployment,
-    dockerUsername,
     deployId,
     deployType,
     terraformStateBucketName,
@@ -141,25 +140,27 @@ ext.deploy = {
         'TF_VAR_deploy_type': deployType,
         'TF_VAR_docker_username': dockerUsername
     ]
-    runTerraform(
-        terraformBuildDir,
-        ['apply'],
-        terraformDeploymentEnvironment
-    )
-    putS3Object(
-        awsAccessKeyDeployment,
-        awsSecretKeyDeployment,
-        terraformStateBucketName,
-        "${deployId}/terraform.tfstate",
-        file("${terraformBuildDir}/terraform.tfstate")
-    )
+    try {
+        runTerraform(
+            terraformBuildDir,
+            ['apply'],
+            terraformDeploymentEnvironment
+        )
+    } finally {
+        putS3Object(
+            awsAccessKeyDeployment,
+            awsSecretKeyDeployment,
+            terraformStateBucketName,
+            "${deployId}/terraform.tfstate",
+            file("${terraformBuildDir}/terraform.tfstate")
+        )
+    }
     validateDeploymentUp(terraformBuildDir)
 }
 
 ext.destroyDeploy = {
     awsAccessKeyDeployment,
     awsSecretKeyDeployment,
-    dockerUsername,
     deployId,
     deployType,
     terraformStateBucketName,
@@ -195,7 +196,6 @@ ext.destroyDeploy = {
 ext.deployCore = {
     awsAccessKeyDeployment,
     awsSecretKeyDeployment,
-    dockerUsername,
     deployType,
     terraformStateBucketName,
     terraformBuildDir ->
