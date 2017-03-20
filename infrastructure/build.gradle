@@ -84,7 +84,6 @@ task deployTest() {
         deploy(
             awsAccessKeyDeployment,
             awsSecretKeyDeployment,
-            dockerUsername,
             deployId,
             deployType,
             terraformStateBucketName,
@@ -99,7 +98,6 @@ task destroyDeploy() {
         destroyDeploy(
             awsAccessKeyDeployment,
             awsSecretKeyDeployment,
-            dockerUsername,
             deployId,
             deployType,
             terraformStateBucketName,
@@ -117,7 +115,6 @@ task testDeploy() {
             deploy(
                 awsAccessKeyDeployment,
                 awsSecretKeyDeployment,
-                dockerUsername,
                 deployId,
                 deployType,
                 terraformStateBucketName,
@@ -126,7 +123,6 @@ task testDeploy() {
             destroyDeploy(
                 awsAccessKeyDeployment,
                 awsSecretKeyDeployment,
-                dockerUsername,
                 deployId,
                 deployType,
                 terraformStateBucketName,
@@ -143,7 +139,6 @@ task deployDevelop() {
         deployCore(
             awsAccessKeyDeployment,
             awsSecretKeyDeployment,
-            dockerUsername,
             deployType,
             terraformStateBucketName,
             terraformBuildDir
