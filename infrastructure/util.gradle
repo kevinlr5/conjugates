@@ -203,7 +203,6 @@ ext.deployCore = {
     deploy(
         awsAccessKeyDeployment,
         awsSecretKeyDeployment,
-        dockerUsername,
         newDeployId,
         deployType,
         terraformStateBucketName,
@@ -226,7 +225,6 @@ ext.deployCore = {
         destroyDeploy(
             awsAccessKeyDeployment,
             awsSecretKeyDeployment,
-            dockerUsername,
             oldDeployId,
             deployType,
             terraformStateBucketName,
