@@ -1,47 +1,12 @@
-import groovy.json.JsonSlurper
-
 apply from: 'util.gradle'
 
-def generateRandomNumber() {
-    def rnd = new Random();
-    return 100000 + rnd.nextInt(900000);
-}
-
-def generateDeployId(project, deployType) {
-    if(project.hasProperty('deployId')) {
-        return deployId
-    } else {
-        return deployType + '-' + generateRandomNumber()
-    }
-}
-
-def generateTerraformStateBucketName() {
-    def name = System.getenv("TERRAFORM_STATE_BUCKET_NAME")
-    return name ?: 'conjugates-terraform-state-' + generateRandomNumber()
-}
-
 ext {
-    deployType = project.hasProperty('deployType') ? deployType : 'test'
-    deployId = generateDeployId(project, deployType)
-    terraformStateBucketName = generateTerraformStateBucketName()
+    terraformStateBucketName = System.getenv("TERRAFORM_STATE_BUCKET_NAME")
     awsAccessKeyRoot = System.getenv("AWS_ACCESS_KEY_ROOT")
     awsSecretKeyRoot = System.getenv("AWS_SECRET_KEY_ROOT")
     awsAccessKeyDeployment = System.getenv("AWS_ACCESS_KEY_DEPLOYMENT")
     awsSecretKeyDeployment = System.getenv("AWS_SECRET_KEY_DEPLOYMENT")
     terraformBuildDir = "${project.buildDir}/terraform"
-    terraformDeploymentEnvironment = [
-        'TF_VAR_aws_access_key_deployment': awsAccessKeyDeployment,
-        'TF_VAR_aws_secret_key_deployment': awsSecretKeyDeployment,
-        'TF_VAR_version': project.version,
-        'TF_VAR_deploy_id': deployId,
-        'TF_VAR_deploy_type': deployType,
-        'TF_VAR_docker_username': dockerUsername
-    ]
-    terraformAccountSetupEnvironment = [
-        'TF_VAR_aws_access_key_root': awsAccessKeyRoot,
-        'TF_VAR_aws_secret_key_root': awsSecretKeyRoot,
-        'TF_VAR_terraform_bucket_name': terraformStateBucketName
-    ]
 }
 
 task clean(type: Delete) {
@@ -53,166 +18,135 @@ task copyAwsAccountFiles(type: Copy) {
     into(terraformBuildDir)
 }
 
-task createAwsAccountTerraform(type: Exec) {
-    workingDir terraformBuildDir
-    executable 'terraform'
-    args 'apply'
-    environment = terraformAccountSetupEnvironment
-}
-
-task destroyAwsAccountTerraform(type: Exec) {
-    workingDir terraformBuildDir
-    executable 'terraform'
-    args = ['destroy', '-force']
-    environment = terraformAccountSetupEnvironment
-}
-
 task copyDeploymentFiles(type: Copy) {
     from("${projectDir}/deployment")
     into(terraformBuildDir)
 }
 
-task plan(type: Exec) {
-    workingDir terraformBuildDir
-    executable 'terraform'
-    args 'plan'
-    environment = terraformDeploymentEnvironment
-    dependsOn 'copyDeploymentFiles'
-}
-
-task deployTerraform(type: Exec) {
-    workingDir terraformBuildDir
-    executable 'terraform'
-    args 'apply'
-    environment = terraformDeploymentEnvironment
-}
-
-task destroyDeployTerraform(type: Exec) {
-    workingDir terraformBuildDir
-    executable 'terraform'
-    args = ['destroy', '-force']
-    environment = terraformDeploymentEnvironment
-}
-
-task pushAccountState() {
+task createAwsAccount() {
+    dependsOn 'copyAwsAccountFiles'
     doLast {
+        def newBucketName = createTerraformStateBucketName()
+        def terraformAccountSetupEnvironment = [
+            'TF_VAR_aws_access_key_root': awsAccessKeyRoot,
+            'TF_VAR_aws_secret_key_root': awsSecretKeyRoot,
+            'TF_VAR_terraform_bucket_name': newBucketName
+        ]
+        runTerraform(
+            terraformBuildDir,
+            ['apply'],
+            terraformAccountSetupEnvironment
+        )
         putS3Object(
             awsAccessKeyRoot,
             awsSecretKeyRoot,
-            terraformStateBucketName,
+            newBucketName,
             'account/terraform.tfstate',
             file("${terraformBuildDir}/terraform.tfstate")
         )
     }
 }
 
-task pushDeploymentState() {
+task destroyAwsAccount() {
+    dependsOn 'copyAwsAccountFiles'
     doLast {
-        putS3Object(
-            awsAccessKeyDeployment,
-            awsSecretKeyDeployment,
-            terraformStateBucketName,
-            "${deployId}/terraform.tfstate",
-            file("${terraformBuildDir}/terraform.tfstate")
-        )
-    }
-}
-
-task downloadAccountState() {
-    doLast {
+        def terraformAccountSetupEnvironment = [
+            'TF_VAR_aws_access_key_root': awsAccessKeyRoot,
+            'TF_VAR_aws_secret_key_root': awsSecretKeyRoot,
+            'TF_VAR_terraform_bucket_name': terraformStateBucketName
+        ]
         def keyName = 'account/terraform.tfstate'
         downloadS3Object(
             awsAccessKeyRoot,
             awsSecretKeyRoot,
             terraformStateBucketName,
-            keyName,
+            'account/terraform.tfstate',
             file("${terraformBuildDir}/terraform.tfstate")
         )
-    }
-}
-
-task downloadDeploymentState() {
-    doLast {
-        downloadS3Object(
-            awsAccessKeyDeployment,
-            awsSecretKeyDeployment,
-            terraformStateBucketName,
-            "${deployId}/terraform.tfstate",
-            file("${terraformBuildDir}/terraform.tfstate")
-        )
-    }
-}
-
-task deleteDeploymentState() {
-    doLast {
-        deleteS3Object(
-            awsAccessKeyDeployment,
-            awsSecretKeyDeployment,
-            terraformStateBucketName,
-            "${deployId}/terraform.tfstate"
-        )
-    }
-}
-
-task emptyTerraformBucket() {
-    doLast {
         emptyS3Bucket(
             awsAccessKeyRoot,
             awsSecretKeyRoot,
             terraformStateBucketName
         )
+        runTerraform(
+            terraformBuildDir,
+            ['destroy', '-force'],
+            terraformAccountSetupEnvironment
+        )
     }
 }
 
-task createAwsAccount() {
-    dependsOn 'copyAwsAccountFiles', 'createAwsAccountTerraform', 'pushAccountState'
-    tasks.createAwsAccountTerraform.mustRunAfter 'copyAwsAccountFiles'
-    tasks.pushAccountState.mustRunAfter 'createAwsAccountTerraform'
-}
-
-task destroyAwsAccount() {
-    dependsOn 'copyAwsAccountFiles', 'downloadAccountState', 'emptyTerraformBucket', 'destroyAwsAccountTerraform'
-    tasks.downloadAccountState.mustRunAfter 'copyAwsAccountFiles'
-    tasks.emptyTerraformBucket.mustRunAfter 'downloadAccountState'
-    tasks.destroyAwsAccountTerraform.mustRunAfter 'emptyTerraformBucket'
-}
-
-task testDeploymentUp() {
+task deployTest() {
+    dependsOn 'copyDeploymentFiles'
     doLast {
-        // Retry for 5 minutes
-        retry(60, 5000) {
-            def analyzerIp = getAnalyzerIpAddress()
-            def infoEndpoint = analyzerIp + ':8080/api/info/'
-            def p = ['curl', infoEndpoint].execute()
-            def text = p.text
-            if(text.empty) {
-                throw new RuntimeException("Waiting for deployment to come up")
-            }
-            def json = new JsonSlurper().parseText(text)
-            def version = json['version']
-            if(version != project.version) {
-                throw new RuntimeException("Waiting for deployment to come up")
-            }
-            println "Deployment up!"
+        def deployType = 'test'
+        def deployId = createDeployId(deployType)
+        deploy(
+            awsAccessKeyDeployment,
+            awsSecretKeyDeployment,
+            dockerUsername,
+            deployId,
+            deployType,
+            terraformStateBucketName,
+            terraformBuildDir)
+    }
+}
+
+task destroyDeploy() {
+    dependsOn 'copyDeploymentFiles'
+    doLast {
+        def deployType = 'not_used'
+        destroyDeploy(
+            awsAccessKeyDeployment,
+            awsSecretKeyDeployment,
+            dockerUsername,
+            deployId,
+            deployType,
+            terraformStateBucketName,
+            terraformBuildDir
+        )
+    }
+}
+
+task testDeploy() {
+    dependsOn 'copyDeploymentFiles'
+    doLast {
+        def deployType = 'test'
+        def deployId = createDeployId(deployType)
+        try {
+            deploy(
+                awsAccessKeyDeployment,
+                awsSecretKeyDeployment,
+                dockerUsername,
+                deployId,
+                deployType,
+                terraformStateBucketName,
+                terraformBuildDir)
+        } finally {
+            destroyDeploy(
+                awsAccessKeyDeployment,
+                awsSecretKeyDeployment,
+                dockerUsername,
+                deployId,
+                deployType,
+                terraformStateBucketName,
+                terraformBuildDir
+            )
         }
     }
 }
 
-task deploy() {
-    dependsOn 'copyDeploymentFiles', 'deployTerraform', 'pushDeploymentState', 'testDeploymentUp'
-    tasks.deployTerraform.mustRunAfter 'copyDeploymentFiles'
-    tasks.pushDeploymentState.mustRunAfter 'deployTerraform'
-    tasks.testDeploymentUp.mustRunAfter 'pushDeploymentState'
-}
-
-task destroyDeploy() {
-    dependsOn 'copyDeploymentFiles', 'downloadDeploymentState', 'destroyDeployTerraform', 'deleteDeploymentState'
-    tasks.downloadDeploymentState.mustRunAfter 'copyDeploymentFiles'
-    tasks.destroyDeployTerraform.mustRunAfter 'downloadDeploymentState'
-    tasks.deleteDeploymentState.mustRunAfter 'destroyDeployTerraform'
-}
-
-task testDeploy() {
-    dependsOn 'deploy'
-    finalizedBy 'destroyDeployTerraform', 'deleteDeploymentState'
+task deployDevelop() {
+    dependsOn 'copyDeploymentFiles'
+    doLast {
+        def deployType = 'develop'
+        deployCore(
+            awsAccessKeyDeployment,
+            awsSecretKeyDeployment,
+            dockerUsername,
+            deployType,
+            terraformStateBucketName,
+            terraformBuildDir
+        )
+    }
 }

@@ -15,3 +15,8 @@ dependencies:
 test:
   override:
     - ./gradlew clean check testDeploy
+deployment:
+  develop:
+    branch: develop
+    commands:
+      - ./gradlew clean deployDevelop
