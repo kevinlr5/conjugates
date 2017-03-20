@@ -4,5 +4,6 @@
 **/.classpath
 **/.settings
 **/.bin
+**/terraform.tfstate*
 .DS_STORE
 **/bin/

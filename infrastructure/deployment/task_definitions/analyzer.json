@@ -1,0 +1,21 @@
+[
+    {
+        "name": "analyzer-${deploy_id}",
+        "image": "${docker_username}/analyzer:${version}",
+        "cpu": 256,
+        "memory": 512,
+        "essential": true,
+        "portMappings": [
+            {
+                "hostPort": 8080,
+                "containerPort": 8080,
+                "protocol": "tcp"
+            }
+        ],
+        "links": [],
+        "command": [],
+        "entryPoint": [],
+        "environment": [],
+        "mountPoints": []
+    }
+]

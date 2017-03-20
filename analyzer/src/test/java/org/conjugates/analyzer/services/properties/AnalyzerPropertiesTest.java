@@ -31,7 +31,7 @@ public class AnalyzerPropertiesTest extends AnalyzerIntegrationBaseTest {
   @Test
   public void testPort() {
     int port = properties.getPort();
-    Assert.assertEquals(8443, port);
+    Assert.assertEquals(8080, port);
   }
 
 }

@@ -1,0 +1,236 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.amazonaws:aws-java-sdk:${awsVersion}")
+        classpath("commons-io:commons-io:${commonsIoVersion}")
+    }
+}
+
+import groovy.json.JsonSlurper
+
+import java.io.File;
+import java.io.InputStream;
+import java.io.IOException;
+
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary
+import com.amazonaws.services.s3.model.S3Object;
+
+import org.apache.commons.io.FileUtils;
+
+def createS3Client(key, secretKey) {
+    def creds = new BasicAWSCredentials(key, secretKey)
+    return new AmazonS3Client(creds)
+}
+
+def createRandomNumber() {
+    def rnd = new Random();
+    return 100000 + rnd.nextInt(900000);
+}
+
+def createTerraformStateBucketName() {
+    return 'conjugates-terraform-state-' + createRandomNumber()
+}
+
+def validateDeploymentUp(terraformBuildDir) {
+    // Retry for 5 minutes
+    retry(60, 5000) {
+        def analyzerIp = getAnalyzerIpAddress(terraformBuildDir)
+        def infoEndpoint = analyzerIp + ':8080/api/info/'
+        def p = ['curl', infoEndpoint].execute()
+        def text = p.text
+        if(text.empty) {
+            throw new RuntimeException("Waiting for deployment to come up")
+        }
+        def json = new JsonSlurper().parseText(text)
+        def version = json['version']
+        if(version != project.version) {
+            throw new RuntimeException("Waiting for deployment to come up")
+        }
+        println "Deployment up!"
+    }
+}
+
+def deleteS3Object(key, secretKey, bucketName, keyName) {
+    def s3client = createS3Client(key, secretKey)
+    s3client.deleteObject(bucketName, keyName)
+}
+
+def getAnalyzerIpAddress(terraformBuildDir) {
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        workingDir terraformBuildDir
+        commandLine 'terraform', 'output', 'analyzer_ip_address'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
+def getS3ObjectContents(key, secretKey, bucketName, keyName) {
+    def s3client = createS3Client(key, secretKey)
+    if(s3client.doesObjectExist(bucketName, keyName)) {
+        return s3client.getObjectAsString(bucketName, keyName);
+    } else {
+        return null;
+    }
+}
+
+ext.createDeployId = { deployType ->
+    return deployType + '-' + createRandomNumber()
+}
+
+ext.putS3Object = { key, secretKey, bucketName, keyName, content ->
+    def s3client = createS3Client(key, secretKey)
+    s3client.putObject(bucketName, keyName, content);
+}
+
+ext.downloadS3Object = { key, secretKey, bucketName, keyName, outputFile ->
+    def s3client = createS3Client(key, secretKey)
+    def content = s3client.getObjectAsString(bucketName, keyName);
+    FileUtils.writeStringToFile(outputFile, content)
+}
+
+ext.emptyS3Bucket = { key, secretKey, bucketName ->
+    def s3client = createS3Client(key, secretKey)
+    def objectListing = s3client.listObjects(bucketName);
+    while (true) {
+        for (Iterator<?> iterator =
+                objectListing.getObjectSummaries().iterator();
+                iterator.hasNext();) {
+            def summary = (S3ObjectSummary)iterator.next();
+            s3client.deleteObject(bucketName, summary.getKey());
+        }
+        if (objectListing.isTruncated()) {
+            objectListing = s3client.listNextBatchOfObjects(objectListing);
+        } else {
+            break;
+        }
+    };
+}
+
+ext.runTerraform = { terraformWorkingDir, terraformArgs, terraformEnvironment ->
+    exec {
+        workingDir terraformWorkingDir
+        executable 'terraform'
+        args = terraformArgs
+        environment = terraformEnvironment
+    }
+}
+
+ext.deploy = {
+    awsAccessKeyDeployment,
+    awsSecretKeyDeployment,
+    deployId,
+    deployType,
+    terraformStateBucketName,
+    terraformBuildDir ->
+    def terraformDeploymentEnvironment = [
+        'TF_VAR_aws_access_key_deployment': awsAccessKeyDeployment,
+        'TF_VAR_aws_secret_key_deployment': awsSecretKeyDeployment,
+        'TF_VAR_version': project.version,
+        'TF_VAR_deploy_id': deployId,
+        'TF_VAR_deploy_type': deployType,
+        'TF_VAR_docker_username': dockerUsername
+    ]
+    try {
+        runTerraform(
+            terraformBuildDir,
+            ['apply'],
+            terraformDeploymentEnvironment
+        )
+    } finally {
+        putS3Object(
+            awsAccessKeyDeployment,
+            awsSecretKeyDeployment,
+            terraformStateBucketName,
+            "${deployId}/terraform.tfstate",
+            file("${terraformBuildDir}/terraform.tfstate")
+        )
+    }
+    validateDeploymentUp(terraformBuildDir)
+}
+
+ext.destroyDeploy = {
+    awsAccessKeyDeployment,
+    awsSecretKeyDeployment,
+    deployId,
+    deployType,
+    terraformStateBucketName,
+    terraformBuildDir ->
+    def terraformDeploymentEnvironment = [
+        'TF_VAR_aws_access_key_deployment': awsAccessKeyDeployment,
+        'TF_VAR_aws_secret_key_deployment': awsSecretKeyDeployment,
+        'TF_VAR_version': project.version,
+        'TF_VAR_deploy_id': deployId,
+        'TF_VAR_deploy_type': deployType,
+        'TF_VAR_docker_username': dockerUsername
+    ]
+    downloadS3Object(
+        awsAccessKeyDeployment,
+        awsSecretKeyDeployment,
+        terraformStateBucketName,
+        "${deployId}/terraform.tfstate",
+        file("${terraformBuildDir}/terraform.tfstate")
+    )
+    runTerraform(
+        terraformBuildDir,
+        ['destroy', '-force'],
+        terraformDeploymentEnvironment
+    )
+    deleteS3Object(
+        awsAccessKeyDeployment,
+        awsSecretKeyDeployment,
+        terraformStateBucketName,
+        "${deployId}/terraform.tfstate"
+    )
+}
+
+ext.deployCore = {
+    awsAccessKeyDeployment,
+    awsSecretKeyDeployment,
+    deployType,
+    terraformStateBucketName,
+    terraformBuildDir ->
+    def newDeployId = createDeployId(deployType)
+    deploy(
+        awsAccessKeyDeployment,
+        awsSecretKeyDeployment,
+        dockerUsername,
+        newDeployId,
+        deployType,
+        terraformStateBucketName,
+        terraformBuildDir
+    )
+    def oldDeployId = getS3ObjectContents(
+        awsAccessKeyDeployment,
+        awsSecretKeyDeployment,
+        terraformStateBucketName,
+        "${deployType}/deployid.txt"
+    )
+    putS3Object(
+        awsAccessKeyDeployment,
+        awsSecretKeyDeployment,
+        terraformStateBucketName,
+        "${deployType}/deployid.txt",
+        newDeployId
+    )
+    if(oldDeployId != null) {
+        destroyDeploy(
+            awsAccessKeyDeployment,
+            awsSecretKeyDeployment,
+            dockerUsername,
+            oldDeployId,
+            deployType,
+            terraformStateBucketName,
+            terraformBuildDir
+        )
+    }
+}

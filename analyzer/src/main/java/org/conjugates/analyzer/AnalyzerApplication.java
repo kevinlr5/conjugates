@@ -2,6 +2,7 @@ package org.conjugates.analyzer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -55,6 +56,7 @@ public class AnalyzerApplication {
     objectMapper.enable(JsonGenerator.Feature.WRITE_NUMBERS_AS_STRINGS);
     objectMapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
     objectMapper.enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN);
+    objectMapper.disable(DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES);
     return objectMapper;
   }
 

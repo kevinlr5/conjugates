@@ -1,0 +1,147 @@
+apply from: 'util.gradle'
+
+ext {
+    terraformStateBucketName = System.getenv("TERRAFORM_STATE_BUCKET_NAME")
+    awsAccessKeyRoot = System.getenv("AWS_ACCESS_KEY_ROOT")
+    awsSecretKeyRoot = System.getenv("AWS_SECRET_KEY_ROOT")
+    awsAccessKeyDeployment = System.getenv("AWS_ACCESS_KEY_DEPLOYMENT")
+    awsSecretKeyDeployment = System.getenv("AWS_SECRET_KEY_DEPLOYMENT")
+    terraformBuildDir = "${project.buildDir}/terraform"
+}
+
+task clean(type: Delete) {
+    delete 'build'
+}
+
+task copyAwsAccountFiles(type: Copy) {
+    from("${projectDir}/aws_account_setup")
+    into(terraformBuildDir)
+}
+
+task copyDeploymentFiles(type: Copy) {
+    from("${projectDir}/deployment")
+    into(terraformBuildDir)
+}
+
+task createAwsAccount() {
+    dependsOn 'copyAwsAccountFiles'
+    doLast {
+        def newBucketName = createTerraformStateBucketName()
+        def terraformAccountSetupEnvironment = [
+            'TF_VAR_aws_access_key_root': awsAccessKeyRoot,
+            'TF_VAR_aws_secret_key_root': awsSecretKeyRoot,
+            'TF_VAR_terraform_bucket_name': newBucketName
+        ]
+        runTerraform(
+            terraformBuildDir,
+            ['apply'],
+            terraformAccountSetupEnvironment
+        )
+        putS3Object(
+            awsAccessKeyRoot,
+            awsSecretKeyRoot,
+            newBucketName,
+            'account/terraform.tfstate',
+            file("${terraformBuildDir}/terraform.tfstate")
+        )
+    }
+}
+
+task destroyAwsAccount() {
+    dependsOn 'copyAwsAccountFiles'
+    doLast {
+        def terraformAccountSetupEnvironment = [
+            'TF_VAR_aws_access_key_root': awsAccessKeyRoot,
+            'TF_VAR_aws_secret_key_root': awsSecretKeyRoot,
+            'TF_VAR_terraform_bucket_name': terraformStateBucketName
+        ]
+        def keyName = 'account/terraform.tfstate'
+        downloadS3Object(
+            awsAccessKeyRoot,
+            awsSecretKeyRoot,
+            terraformStateBucketName,
+            'account/terraform.tfstate',
+            file("${terraformBuildDir}/terraform.tfstate")
+        )
+        emptyS3Bucket(
+            awsAccessKeyRoot,
+            awsSecretKeyRoot,
+            terraformStateBucketName
+        )
+        runTerraform(
+            terraformBuildDir,
+            ['destroy', '-force'],
+            terraformAccountSetupEnvironment
+        )
+    }
+}
+
+task deployTest() {
+    dependsOn 'copyDeploymentFiles'
+    doLast {
+        def deployType = 'test'
+        def deployId = createDeployId(deployType)
+        deploy(
+            awsAccessKeyDeployment,
+            awsSecretKeyDeployment,
+            deployId,
+            deployType,
+            terraformStateBucketName,
+            terraformBuildDir)
+    }
+}
+
+task destroyDeploy() {
+    dependsOn 'copyDeploymentFiles'
+    doLast {
+        def deployType = 'not_used'
+        destroyDeploy(
+            awsAccessKeyDeployment,
+            awsSecretKeyDeployment,
+            deployId,
+            deployType,
+            terraformStateBucketName,
+            terraformBuildDir
+        )
+    }
+}
+
+task testDeploy() {
+    dependsOn 'copyDeploymentFiles'
+    doLast {
+        def deployType = 'test'
+        def deployId = createDeployId(deployType)
+        try {
+            deploy(
+                awsAccessKeyDeployment,
+                awsSecretKeyDeployment,
+                deployId,
+                deployType,
+                terraformStateBucketName,
+                terraformBuildDir)
+        } finally {
+            destroyDeploy(
+                awsAccessKeyDeployment,
+                awsSecretKeyDeployment,
+                deployId,
+                deployType,
+                terraformStateBucketName,
+                terraformBuildDir
+            )
+        }
+    }
+}
+
+task deployDevelop() {
+    dependsOn 'copyDeploymentFiles'
+    doLast {
+        def deployType = 'develop'
+        deployCore(
+            awsAccessKeyDeployment,
+            awsSecretKeyDeployment,
+            deployType,
+            terraformStateBucketName,
+            terraformBuildDir
+        )
+    }
+}
