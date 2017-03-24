@@ -55,7 +55,6 @@ task destroyAwsAccount() {
             'TF_VAR_aws_secret_key_root': awsSecretKeyRoot,
             'TF_VAR_terraform_bucket_name': terraformStateBucketName
         ]
-        def keyName = 'account/terraform.tfstate'
         downloadS3Object(
             awsAccessKeyRoot,
             awsSecretKeyRoot,
