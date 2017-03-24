@@ -276,7 +276,7 @@ resource "aws_elb" "analyzer-elb" {
     healthy_threshold   = 2
     unhealthy_threshold = 10
     timeout             = 3
-    target              = "HTTP:8080/api/info/"
+    target              = "HTTP:8080/api/info"
     interval            = 5
   }
 
