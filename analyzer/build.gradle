@@ -21,7 +21,6 @@ import com.bmuschko.gradle.docker.tasks.container.DockerStopContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
 import groovy.json.JsonSlurper
 
-
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'org.springframework.boot'
@@ -53,6 +52,7 @@ dependencies {
     compile('org.springframework.boot:spring-boot-starter-web')
     compile("edu.stanford.nlp:stanford-corenlp:${stanfordNlpVersion}")
     compile("edu.stanford.nlp:stanford-corenlp:${stanfordNlpVersion}:models@jar")
+    compile("com.google.guava:guava:${guavaVersion}")
 
     testCompile('org.springframework.boot:spring-boot-starter-test')
     testCompile('org.springframework.restdocs:spring-restdocs-mockmvc')
@@ -131,6 +131,7 @@ task testContainer() {
 
 test {
     outputs.dir snippetsDir
+    maxHeapSize = "1024m" // CIRCLE CI nodes have limited memory
 }
 
 asciidoctor {

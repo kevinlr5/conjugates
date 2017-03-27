@@ -29,3 +29,25 @@ include::{snippets}/info-controller-docs-test/info-example/http-response.adoc[]
 ==== CURL request
 
 include::{snippets}/info-controller-docs-test/info-example/curl-request.adoc[]
+
+== Document API
+
+A resource that provides analysis of provided documents
+
+=== Analyze provided document
+
+==== Request structure
+
+include::{snippets}/document-controller-docs-test/document-example/http-request.adoc[]
+
+==== Response body fields
+
+include::{snippets}/document-controller-docs-test/document-example/response-fields.adoc[]
+
+==== Example response
+
+include::{snippets}/document-controller-docs-test/document-example/http-response.adoc[]
+
+==== CURL request
+
+include::{snippets}/document-controller-docs-test/document-example/curl-request.adoc[]

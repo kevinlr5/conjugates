@@ -1,25 +1,32 @@
-package org.conjugates.analyzer.endpoints.info;
+package org.conjugates.analyzer.services.documents;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class InfoTestPostRequest {
+public class Entity {
 
   private final String value;
+  private final String type;
 
   @JsonCreator
-  public InfoTestPostRequest(@JsonProperty("value") String value) {
+  public Entity(@JsonProperty("value") String value, @JsonProperty("type") String type) {
     this.value = value;
+    this.type = type;
   }
 
   public String getValue() {
     return value;
   }
 
+  public String getType() {
+    return type;
+  }
+
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
+    result = prime * result + ((type == null) ? 0 : type.hashCode());
     result = prime * result + ((value == null) ? 0 : value.hashCode());
     return result;
   }
@@ -35,7 +42,14 @@ public class InfoTestPostRequest {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    InfoTestPostRequest other = (InfoTestPostRequest) obj;
+    Entity other = (Entity) obj;
+    if (type == null) {
+      if (other.type != null) {
+        return false;
+      }
+    } else if (!type.equals(other.type)) {
+      return false;
+    }
     if (value == null) {
       if (other.value != null) {
         return false;
@@ -48,7 +62,7 @@ public class InfoTestPostRequest {
 
   @Override
   public String toString() {
-    return "InfoTestPostRequest [value=" + value + "]";
+    return "Entity [value=" + value + ", type=" + type + "]";
   }
 
 }

@@ -13,4 +13,6 @@ import org.springframework.test.context.web.WebAppConfiguration;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public abstract class AnalyzerIntegrationBaseTest {
 
+  public static final String ASCIIDOCTOR_SNIPPETS_DIR = "build/generated-snippets";
+
 }
