@@ -1,8 +1,8 @@
-package org.conjugates.analyzer.endpoints.info;
+package org.conjugates.analyzer.endpoints.document;
 
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.conjugates.analyzer.framework.AnalyzerIntegrationBaseTest;
@@ -10,9 +10,10 @@ import org.conjugates.analyzer.framework.TestHttpService;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.restdocs.JUnitRestDocumentation;
 
-public class InfoControllerDocsTest extends AnalyzerIntegrationBaseTest {
+public class DocumentControllerDocsTest extends AnalyzerIntegrationBaseTest {
 
   @Rule
   public JUnitRestDocumentation restDocumentation =
@@ -22,14 +23,16 @@ public class InfoControllerDocsTest extends AnalyzerIntegrationBaseTest {
   private TestHttpService http;
 
   @Test
-  public void infoExample() throws Exception {
-    http.mvcDocs(restDocumentation).perform(get("/api/info"))
+  public void documentExample() throws Exception {
+    String text = "Schaaf said that Davis had refused to meet with her over the past year.";
+    AnalyzedDocumentRequest request = new AnalyzedDocumentRequest(text);
+    http.mvcDocs(restDocumentation)
+        .perform(post("/api/document/analyze").contentType(MediaType.APPLICATION_JSON)
+            .content(http.serialize(request)))
         .andExpect(status().isOk())
         .andDo(http.document(
             responseFields(
-                fieldWithPath("name").description("The name of the service"),
-                fieldWithPath("version").description("The version of the service"),
-                fieldWithPath("commitHash").description("The commit built"))));
+                fieldWithPath("score").description("The score for the provided document"))));
   }
 
 }

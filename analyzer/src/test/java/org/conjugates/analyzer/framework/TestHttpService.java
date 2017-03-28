@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 
-import org.conjugates.analyzer.endpoints.info.InfoTestPostRequest;
 import org.conjugates.analyzer.services.properties.AnalyzerProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.restdocs.JUnitRestDocumentation;
@@ -40,10 +39,9 @@ public class TestHttpService {
     return MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
   }
 
-
-  public String serialize(InfoTestPostRequest request) {
+  public String serialize(Object object) {
     try {
-      return mapper.writeValueAsString(request);
+      return mapper.writeValueAsString(object);
     } catch (JsonProcessingException ex) {
       throw new RuntimeException(ex);
     }
