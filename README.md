@@ -11,6 +11,10 @@ Bertrand Russell and others have made the observation that using different words
 
 Additionally, this project is designed to use modern devops techniques including continuous deployment with zero downtime upgrading. Take a look at the technical documentation below for more information!
 
+## Services
+
+[Analyzer Service](docs/analyzer.md)
+
 ## Developer Setup
 
 [Developing Conjugates](docs/development.md)
