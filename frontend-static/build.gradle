@@ -1,0 +1,38 @@
+buildscript {
+    repositories {
+      maven {
+        url "https://plugins.gradle.org/m2/"
+      }
+    }
+    dependencies {
+        classpath("com.moowork.gradle:gradle-node-plugin:${nodePluginVersion}")
+    }
+}
+
+apply plugin: 'com.moowork.node'
+
+node {
+  version = nodeVersion
+  download = true
+}
+
+task clean(type: Delete) {
+  delete 'build', 'node_modules'
+}
+
+task buildFrontend(type: NpmTask) {
+  args = ['run', 'build']
+  environment 'NODE_ENV': 'production'
+}
+
+task runFrontend(type: NpmTask) {
+  args = ['start']
+}
+
+task shrinkwrap(type: NpmTask) {
+  args = ['shrinkwrap']
+}
+
+tasks.buildFrontend.dependsOn npmInstall, clean
+tasks.runFrontend.dependsOn npmInstall
+tasks.shrinkwrap.dependsOn buildFrontend

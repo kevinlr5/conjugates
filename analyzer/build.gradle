@@ -93,7 +93,7 @@ task pushImage(type: DockerPushImage) {
 task createContainer(type: DockerCreateContainer) {
     dependsOn pushImage
     targetImageId { buildImage.getImageId() }
-    portBindings = ['8080:8080']
+    portBindings = ['9090:9090']
 }
 
 task startContainer(type: DockerStartContainer) {
@@ -114,7 +114,7 @@ task testContainer() {
     dependsOn startContainer
     doLast {
         retry(5, 5000) {
-            def p = ['curl', "http://localhost:8080/api/info"].execute()
+            def p = ['curl', "http://localhost:9090/api/info"].execute()
             def text = p.text
             if(text.empty) {
                 throw new RuntimeException("Waiting for analyzer to start")

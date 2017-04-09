@@ -1,0 +1,53 @@
+= Conjugates Analyzer REST Service API
+:doctype: book
+:icons: font
+:source-highlighter: highlightjs
+:toc: left
+:toclevels: 4
+:sectlinks:
+
+= Resources
+
+== Info API
+
+A resource that provides information about the service
+
+=== Get service information
+
+==== Request structure
+
+include::{snippets}/info-controller-docs-test/info-example/http-request.adoc[]
+
+==== Response body fields
+
+include::{snippets}/info-controller-docs-test/info-example/response-fields.adoc[]
+
+==== Example response
+
+include::{snippets}/info-controller-docs-test/info-example/http-response.adoc[]
+
+==== CURL request
+
+include::{snippets}/info-controller-docs-test/info-example/curl-request.adoc[]
+
+== Document API
+
+A resource that provides analysis of provided documents
+
+=== Analyze provided document
+
+==== Request structure
+
+include::{snippets}/document-controller-docs-test/document-example/http-request.adoc[]
+
+==== Response body fields
+
+include::{snippets}/document-controller-docs-test/document-example/response-fields.adoc[]
+
+==== Example response
+
+include::{snippets}/document-controller-docs-test/document-example/http-response.adoc[]
+
+==== CURL request
+
+include::{snippets}/document-controller-docs-test/document-example/curl-request.adoc[]

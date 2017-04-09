@@ -155,8 +155,8 @@ resource "aws_security_group" "elb_sg" {
 
   ingress {
     protocol    = "tcp"
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = 9090
+    to_port     = 9090
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -184,8 +184,8 @@ resource "aws_security_group" "instance_sg" {
 
   ingress {
     protocol  = "tcp"
-    from_port = 8080
-    to_port   = 8080
+    from_port = 9090
+    to_port   = 9090
 
     security_groups = [
       "${aws_security_group.elb_sg.id}",
@@ -266,9 +266,9 @@ resource "aws_elb" "analyzer-elb" {
   ]
 
   listener {
-    instance_port     = 8080
+    instance_port     = 9090
     instance_protocol = "http"
-    lb_port           = 8080
+    lb_port           = 9090
     lb_protocol       = "http"
   }
 
@@ -276,7 +276,7 @@ resource "aws_elb" "analyzer-elb" {
     healthy_threshold   = 2
     unhealthy_threshold = 10
     timeout             = 3
-    target              = "HTTP:8080/api/info"
+    target              = "HTTP:9090/api/info"
     interval            = 5
   }
 
@@ -314,7 +314,7 @@ resource "aws_ecs_service" "analyzer" {
   load_balancer {
     elb_name       = "${aws_elb.analyzer-elb.id}"
     container_name = "analyzer-${var.deploy_id}"
-    container_port = 8080
+    container_port = 9090
   }
 
   depends_on = [
