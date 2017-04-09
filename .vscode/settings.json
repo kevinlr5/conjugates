@@ -1,0 +1,11 @@
+{
+  "files.exclude": {
+    ".gitignore": true,
+    ".gradle": true,
+    ".vscode": true,
+    "build": true,
+    "gradle": true,
+    "node_modules": true
+  },
+  "typescript.tsdk": "./frontend/node_modules/typescript/lib"
+}

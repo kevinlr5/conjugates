@@ -44,7 +44,7 @@ def validateDeploymentUp(terraformBuildDir) {
     // Retry for 5 minutes
     retry(60, 5000) {
         def analyzerIp = getAnalyzerIpAddress(terraformBuildDir)
-        def infoEndpoint = analyzerIp + ':8080/api/info/'
+        def infoEndpoint = analyzerIp + ':9090/api/info/'
         def p = ['curl', infoEndpoint].execute()
         def text = p.text
         if(text.empty) {
