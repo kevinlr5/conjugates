@@ -5,7 +5,6 @@ buildscript {
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-        classpath("org.asciidoctor:asciidoctor-gradle-plugin:${asciidoctorPluginVersion}")
         classpath("com.bmuschko:gradle-docker-plugin:${dockerPluginVersion}")
     }
 }
@@ -23,17 +22,56 @@ subprojects {
     version = rootProject.version
 }
 
+configure(subprojects.findAll {it.name == 'analyzer' || it.name == 'frontend-server'}) {
+    apply plugin: 'java'
+    apply plugin: 'eclipse'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'checkstyle'
+    apply plugin: 'com.bmuschko.docker-remote-api'
+
+    group = 'org.conjugates'
+
+    ext {
+        imageBuildDir = file("${project.buildDir}/image")
+    }
+
+    checkstyle {
+        toolVersion = checkstyleToolVersion
+        configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
+    }
+
+    sourceCompatibility = 1.8
+
+    repositories {
+        mavenCentral()
+    }
+}
+
 def retry(times, sleepTimeMillis, body) {
   int retries = 0
-  def exceptions = []
+  def exception = null
   while(retries++ < times) {
     try {
       return body.call()
     } catch(e) {
-      exceptions << e
+      exception = e
       println e.message
       sleep(sleepTimeMillis)
     }        
   }
-  throw new RuntimeException("Failed after $times retries", exceptions)
+  throw new RuntimeException("Failed after $times tries", exception)
+}
+
+def validateHttpEndpoint(url, containerName, validateResponse) {
+    def errorMessage = "Waiting for ${containerName} service to start"
+    retry(5, 5000) {
+        def p = ['curl', url].execute()
+        def text = p.text
+        if(text.empty) {
+            throw new RuntimeException(errorMessage)
+        }
+        if(!validateResponse(text)) {
+            throw new RuntimeException(errorMessage)
+        }
+    }
 }
