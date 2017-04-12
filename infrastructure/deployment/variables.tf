@@ -40,7 +40,7 @@ variable "deploy_type" {
 /* ECS optimized AMIs per region */
 variable "amis" {
   default = {
-    us-west-2 = "ami-022b9262"
+    us-west-2 = "ami-62d35c02"
   }
 }
 
