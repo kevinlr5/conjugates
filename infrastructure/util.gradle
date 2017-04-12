@@ -32,8 +32,8 @@ def createS3Client(key, secretKey) {
 }
 
 def createRandomNumber() {
-    def rnd = new Random();
-    return 100000 + rnd.nextInt(900000);
+    def rnd = new Random()
+    return 100000 + rnd.nextInt(900000)
 }
 
 def createTerraformStateBucketName() {
@@ -42,21 +42,41 @@ def createTerraformStateBucketName() {
 
 def validateDeploymentUp(terraformBuildDir) {
     // Retry for 5 minutes
-    retry(60, 5000) {
-        def analyzerIp = getAnalyzerIpAddress(terraformBuildDir)
-        def infoEndpoint = analyzerIp + ':9090/api/info/'
-        def p = ['curl', infoEndpoint].execute()
-        def text = p.text
-        if(text.empty) {
-            throw new RuntimeException("Waiting for deployment to come up")
-        }
-        def json = new JsonSlurper().parseText(text)
-        def version = json['version']
-        if(version != project.version) {
-            throw new RuntimeException("Waiting for deployment to come up")
-        }
+    retry(100, 5000) {
+        validateFrontendUp()
+        validateAnalyzerUp()
         println "Deployment up!"
     }
+}
+
+def validateAnalyzerUp() {
+    def analyzerIp = getAnalyzerIpAddress(terraformBuildDir)
+    def infoEndpoint = analyzerIp + ':9090/api/info/'
+    def p = ['curl', infoEndpoint].execute()
+    def text = p.text
+    if(text.empty) {
+        throw new RuntimeException("Waiting for analyzer to come up")
+    }
+    def json = new JsonSlurper().parseText(text)
+    def version = json['version']
+    if(version != project.version) {
+        throw new RuntimeException("Waiting for analyzer to come up")
+    }
+    println "Analyzer up!"
+}
+
+def validateFrontendUp() {
+    def frontendIp = getFrontendIpAddress(terraformBuildDir)
+    def home = frontendIp + ':80/'
+    def p = ['curl', home].execute()
+    def text = p.text
+    if(text.empty) {
+        throw new RuntimeException("Waiting for frontend to come up")
+    }
+    if(!text.contains('Conjugates')) {
+        throw new RuntimeException("Waiting for frontend to come up")
+    }
+    println "Frontend up!"
 }
 
 def deleteS3Object(key, secretKey, bucketName, keyName) {
@@ -69,6 +89,16 @@ def getAnalyzerIpAddress(terraformBuildDir) {
     exec {
         workingDir terraformBuildDir
         commandLine 'terraform', 'output', 'analyzer_ip_address'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
+def getFrontendIpAddress(terraformBuildDir) {
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        workingDir terraformBuildDir
+        commandLine 'terraform', 'output', 'frontend_ip_address'
         standardOutput = stdout
     }
     return stdout.toString().trim()
@@ -89,7 +119,7 @@ ext.createDeployId = { deployType ->
 
 ext.putS3Object = { key, secretKey, bucketName, keyName, content ->
     def s3client = createS3Client(key, secretKey)
-    s3client.putObject(bucketName, keyName, content);
+    s3client.putObject(bucketName, keyName, content)
 }
 
 ext.downloadS3Object = { key, secretKey, bucketName, keyName, outputFile ->
@@ -105,8 +135,8 @@ ext.emptyS3Bucket = { key, secretKey, bucketName ->
         for (Iterator<?> iterator =
                 objectListing.getObjectSummaries().iterator();
                 iterator.hasNext();) {
-            def summary = (S3ObjectSummary)iterator.next();
-            s3client.deleteObject(bucketName, summary.getKey());
+            def summary = (S3ObjectSummary)iterator.next()
+            s3client.deleteObject(bucketName, summary.getKey())
         }
         if (objectListing.isTruncated()) {
             objectListing = s3client.listNextBatchOfObjects(objectListing);
