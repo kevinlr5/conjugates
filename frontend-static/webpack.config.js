@@ -25,12 +25,20 @@ if (process.env.NODE_ENV === 'production') {
   plugins.push(new webpack.LoaderOptionsPlugin({
     minimize: true
   }));
+  plugins.push(new webpack.DefinePlugin({
+    '__API_URL__': JSON.stringify('@API_URL'),
+  }));
   plugins.push(new webpack.optimize.UglifyJsPlugin({
     output: {
       comments: false
     },
     sourceMap: true
   }));
+} else {
+    console.log('** WEBPACK DEV MODE ENABLED **');
+    plugins.push(new webpack.DefinePlugin({
+      '__API_URL__': JSON.stringify('http://localhost:9090'),
+    }));
 }
 
 module.exports = {
@@ -54,8 +62,9 @@ module.exports = {
       { test: /\.tsx?$/, use: 'tslint-loader', enforce: 'pre' },
       { test: /\.js$/, use: 'source-map-loader', enforce: 'pre' },
       { test: /\.tsx?$/, use: 'ts-loader' },
+      { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader'] },
       { test: /\.css$/, use: ['style-loader', 'css-loader'] },
-      { test: /\.less$/, use: ['style-loader', 'css-loader', 'less-loader'] },
+      { test: /\.png$/, use: 'file-loader' },
       { test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/, use: FILE_LOADER },
       { test: /\.woff(\?v=\d+\.\d+\.\d+)?$/, use: FILE_LOADER },
       { test: /\.eot(\?v=\d+\.\d+\.\d+)?$/, use: FILE_LOADER },

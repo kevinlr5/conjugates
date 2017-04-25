@@ -35,6 +35,18 @@ public class DocumentAnalyzerTest extends AnalyzerIntegrationBaseTest {
   }
 
   @Test
+  public void testEmptyScore() {
+    String text = "a";
+    AnalyzedDocument result = documentAnalyzer.analyze(text);
+
+    DocumentScore documentScore = result.getScore();
+    Assert.assertEquals(50, documentScore.getAverageScore());
+    Assert.assertEquals(1, documentScore.getWeight());
+
+    Assert.assertTrue(result.getScore().getEntityScores().isEmpty());
+  }
+
+  @Test
   public void testParsedDocument() {
     String text = createTestString();
     AnalyzedDocument result = documentAnalyzer.analyze(text);

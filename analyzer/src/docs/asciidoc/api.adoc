@@ -51,3 +51,25 @@ include::{snippets}/document-controller-docs-test/document-example/http-response
 ==== CURL request
 
 include::{snippets}/document-controller-docs-test/document-example/curl-request.adoc[]
+
+== Article API
+
+A resource that provides analysis of provided articles
+
+=== Analyze provided article
+
+==== Request structure
+
+include::{snippets}/article-controller-docs-test/article-example/http-request.adoc[]
+
+==== Response body fields
+
+include::{snippets}/article-controller-docs-test/article-example/response-fields.adoc[]
+
+==== Example response
+
+include::{snippets}/article-controller-docs-test/article-example/http-response.adoc[]
+
+==== CURL request
+
+include::{snippets}/article-controller-docs-test/article-example/curl-request.adoc[]
