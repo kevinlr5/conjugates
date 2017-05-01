@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class SentenceParser {
 
+  private static final String DISALLOWED_DEFAULT_TAG = "O";
+
   public ParsedSentence parse(Sentence sentence) {
     String rawSentence = sentence.text();
     Sentiment sentiment = getSentiment(sentence);
@@ -43,7 +45,7 @@ public class SentenceParser {
 
   private static Set<Entity> getEntities(Sentence sentence) {
     Set<String> nerTags = FluentIterable.from(sentence.nerTags())
-        .filter(s -> !s.equals("O"))
+        .filter(s -> !s.equals(DISALLOWED_DEFAULT_TAG))
         .toSet();
     return FluentIterable.from(nerTags)
         .transformAndConcat(t -> getEntitiesAndTypesForTag(t, sentence))

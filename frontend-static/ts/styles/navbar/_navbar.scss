@@ -1,0 +1,27 @@
+$logo-width: 32px;
+$logo-height: 32px;
+
+.navbar-header {
+	z-index: 10000;
+	@include element-dropshadow;
+}
+
+.navbar {
+	.header-logo {
+		min-width: $logo-width;
+		height: $header-height;
+		background-image: url(navbar/logo.png);
+		background-position: left center;
+		background-size: $logo-width $logo-height;
+		background-repeat: no-repeat;
+		position: relative;
+
+		.header-logo-text {
+			margin-left: $logo-width + 15px;
+			font-size: 1.45rem;
+			font-weight: 600;
+			letter-spacing: .05rem;
+			text-transform: lowercase;
+		}
+	}
+}

@@ -41,8 +41,8 @@ def createTerraformStateBucketName() {
 }
 
 def validateDeploymentUp(terraformBuildDir) {
-    // Retry for 5 minutes
-    retry(100, 5000) {
+    // Retry for 10 minutes
+    retry(200, 5000) {
         validateFrontendUp()
         validateAnalyzerUp()
         println "Deployment up!"
