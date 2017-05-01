@@ -11,13 +11,15 @@ buildscript {
 
 apply plugin: 'com.moowork.node'
 
+buildDir = file('build')
+
 node {
   version = nodeVersion
   download = true
 }
 
 task clean(type: Delete) {
-  delete 'build'
+  delete buildDir
 }
 
 task buildFrontend(type: NpmTask) {
@@ -33,6 +35,12 @@ task shrinkwrap(type: NpmTask) {
   args = ['shrinkwrap']
 }
 
-tasks.buildFrontend.dependsOn npmInstall, clean
-tasks.runFrontend.dependsOn npmInstall
+task copyApiDocs(type: Copy, dependsOn: [':analyzer:asciidoctor', 'clean']) {
+  from("${project(':analyzer').buildDir}/asciidoc/html5")
+  into "${project.buildDir}/docs"
+}
+
+
+tasks.buildFrontend.dependsOn npmInstall, clean, copyApiDocs
+tasks.runFrontend.dependsOn npmInstall, copyApiDocs
 tasks.shrinkwrap.dependsOn buildFrontend
