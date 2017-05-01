@@ -64,7 +64,7 @@ module.exports = {
       { test: /\.tsx?$/, use: 'ts-loader' },
       { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader'] },
       { test: /\.css$/, use: ['style-loader', 'css-loader'] },
-      { test: /\.png$/, use: 'file-loader' },
+      { test: /\.png(\?v=\d+\.\d+\.\d+)?$/, use: FILE_LOADER },
       { test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/, use: FILE_LOADER },
       { test: /\.woff(\?v=\d+\.\d+\.\d+)?$/, use: FILE_LOADER },
       { test: /\.eot(\?v=\d+\.\d+\.\d+)?$/, use: FILE_LOADER },

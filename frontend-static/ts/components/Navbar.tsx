@@ -29,7 +29,7 @@ export default class Navbar extends React.Component<{}, {}> {
         return <section className='top-bar-section'>
             <ul className='right'>
                 <li>
-                    <a href='#'>
+                    <a href='/docs/api.html' target='_blank'>
                         API Docs
                     </a>
                 </li>
