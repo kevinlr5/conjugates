@@ -206,9 +206,9 @@ resource "aws_security_group" "frontend_elb_sg" {
   }
 }
 
-resource "aws_security_group" "analyzer_instance_sg" {
+resource "aws_security_group" "instance_sg" {
   description = "controls direct access to application instances"
-  name        = "ecs-analyzer-instance-sg-${var.deploy_id}"
+  name        = "ecs-instance-sg-${var.deploy_id}"
   vpc_id      = "${aws_vpc.main.id}"
 
   ingress {
@@ -220,25 +220,6 @@ resource "aws_security_group" "analyzer_instance_sg" {
       "${aws_security_group.analyzer_elb_sg.id}",
     ]
   }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags {
-    deploy_id   = "${var.deploy_id}"
-    deploy_type = "${var.deploy_type}"
-    version     = "${var.version}"
-  }
-}
-
-resource "aws_security_group" "frontend_instance_sg" {
-  description = "controls direct access to application instances"
-  name        = "ecs-frontend-instance-sg-${var.deploy_id}"
-  vpc_id      = "${aws_vpc.main.id}"
 
   ingress {
     protocol  = "tcp"
@@ -274,29 +255,12 @@ data "template_file" "user_data" {
   }
 }
 
-resource "aws_launch_configuration" "analyzer_app" {
+resource "aws_launch_configuration" "app" {
   security_groups = [
-    "${aws_security_group.analyzer_instance_sg.id}",
+    "${aws_security_group.instance_sg.id}",
   ]
 
-  name                        = "conjugates-analyzer-${var.deploy_id}"
-  image_id                    = "${lookup(var.amis, var.region)}"
-  instance_type               = "${var.instance_type}"
-  iam_instance_profile        = "${aws_iam_instance_profile.app.name}"
-  associate_public_ip_address = true
-  user_data                   = "${data.template_file.user_data.rendered}"
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-resource "aws_launch_configuration" "frontend_app" {
-  security_groups = [
-    "${aws_security_group.frontend_instance_sg.id}",
-  ]
-
-  name                        = "conjugates-frontend-${var.deploy_id}"
+  name                        = "conjugates-${var.deploy_id}"
   image_id                    = "${lookup(var.amis, var.region)}"
   instance_type               = "${var.instance_type}"
   iam_instance_profile        = "${aws_iam_instance_profile.app.name}"
@@ -309,37 +273,12 @@ resource "aws_launch_configuration" "frontend_app" {
 }
 
 resource "aws_autoscaling_group" "analyzer_app" {
-  name                 = "ecs-analyzer-asg-${var.deploy_id}"
+  name                 = "ecs-asg-${var.deploy_id}"
   vpc_zone_identifier  = ["${aws_subnet.main.*.id}"]
   min_size             = 1
   max_size             = 2
-  desired_capacity     = 1
-  launch_configuration = "${aws_launch_configuration.analyzer_app.name}"
-
-  tag {
-    key                 = "deploy_id" 
-    value               = "${var.deploy_id}"
-    propagate_at_launch = true
-  }
-  tag {
-    key                 = "deploy_type"
-    value               = "${var.deploy_type}"
-    propagate_at_launch = true
-  }
-  tag {
-    key                 = "version"
-    value               = "${var.version}"
-    propagate_at_launch = true
-  }
-}
-
-resource "aws_autoscaling_group" "frontend_app" {
-  name                 = "ecs-frontend-asg-${var.deploy_id}"
-  vpc_zone_identifier  = ["${aws_subnet.main.*.id}"]
-  min_size             = 1
-  max_size             = 2
-  desired_capacity     = 1
-  launch_configuration = "${aws_launch_configuration.frontend_app.name}"
+  desired_capacity     = 2
+  launch_configuration = "${aws_launch_configuration.app.name}"
 
   tag {
     key                 = "deploy_id" 
