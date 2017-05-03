@@ -25,11 +25,7 @@ task copyStaticContent(type: Copy, dependsOn: ':frontend-static:buildFrontend') 
 tasks.processResources.dependsOn copyStaticContent
 
 task prepareImageBuildDir(type: Copy) {
-    from("${project.rootDir}/infrastructure/${containerName}") {
-        filesMatching("application.properties") { props ->
-            props.expand(version: project.version, commit: project.gitCommit)
-        }
-    }
+    from("${project.rootDir}/infrastructure/${containerName}")
     from("${project.buildDir}/libs") {
         include '*.jar'
         rename '.*jar', 'app.jar'

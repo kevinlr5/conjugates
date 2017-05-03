@@ -3,6 +3,7 @@ FROM openjdk:8
 LABEL maintainer "Kevin Richards"
 
 VOLUME /tmp
+ENV ANALYZER_API_URL http://localhost:9090
 ADD app.jar app.jar
 ADD application.properties application.properties
 RUN bash -c 'touch /app.jar'
