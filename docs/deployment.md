@@ -33,7 +33,7 @@ Deployments of conjugates can be done locally or through a CI/CD server (this re
 
 ## Structure of a deployment
 
-Conjugates is a straightforward containerized application that is deployed using Amazon ECS. An ECS cluster is created with an analyzer service that has one exposed port. Internally, there is an ELB instance on top of EC2 instances. The EC2 instances are running ECS optimized images (coreos), which are running the analyzer docker container retrieved from dockerhub. All of these EC2 resources are running inside a VPC and do not allow outside access except to the single port exposed by the ELB. In order to facilitate proper communication, there are some IAM resources created that are utilized by some of the services.
+Conjugates is a straightforward containerized application that is deployed using Amazon ECS. An ECS cluster is created with an analyzer and frontend services that each have one exposed port. Internally, there are two ELB instances on top of EC2 instances. The EC2 instances are running ECS optimized images (coreos), which are running the analyzer and frontend docker containers retrieved from dockerhub. All of these EC2 resources are running inside a VPC and do not allow outside access except to the single ports exposed by the ELBs. In order to facilitate proper communication, there are some IAM resources created that are utilized by some of the services.
 
 ## Deploying a test instance
 
