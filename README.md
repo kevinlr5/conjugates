@@ -13,7 +13,8 @@ Additionally, this project is designed to use modern devops techniques including
 
 ## Services
 
-[Analyzer Service](docs/analyzer.md)
+- [Analyzer Service](docs/analyzer.md)
+- [Frontend Service](docs/frontend.md)
 
 ## Developer Setup
 
