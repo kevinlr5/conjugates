@@ -1,6 +1,6 @@
 # Analyzer Service
 
-'analyzer' is a java server build on Spring and run on Tomcat. It has a RESTful HTTP API, which exposes the capability to analyze the sentiment of provided documents. The API uses JSON as it's primary information transport format.
+'analyzer' is a java server built on Spring and run on Tomcat. It has a RESTful HTTP API, which exposes the capability to analyze the sentiment of provided documents. The API uses JSON as it's primary information transport format.
 
 ## Build
 
