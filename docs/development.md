@@ -8,9 +8,15 @@ This document describes the tools necessary to do development on the conjugates 
 
 ## Eclipse
 
-1. Install the latest version of eclipse
+1. Install the latest version of Eclipse
 2. Import and use the eclipse style settings in ide-resources/eclipse-java-google-style.xml
 3. Run `./gradlew clean eclipse` and import the projects
+
+## Visual Studio Code
+
+1. Install the latest version of Visual Studio Code
+2. Install tslint plugin for Visual Studio Code
+3. Familiarity with Node, Webpack, and NPM is recommended
 
 ## Docker
 
@@ -21,8 +27,9 @@ This document describes the tools necessary to do development on the conjugates 
 Conjugates uses gradle as its build system. The gradle wrapper is committed to the repo. Additionally, the build configuration uses a multi-project build.
 
 - Unbreakable test build (deploys to AWS): `./gradlew clean check testDeploy`
-- Run analyzer server: `./gradlew clean bootRun`
-- Build runnable docker image: `./gradlew clean buildImage`
+- Run analyzer server: `./gradlew clean :analyzer:bootRun`
+- Run frontend server: `./gradlew clean runFrontend`
+- Build runnable docker images: `./gradlew clean buildImage`
 - Build server html documentation: `./gradlew clean asciidoctor`
 
 ### Containers
