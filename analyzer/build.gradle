@@ -4,9 +4,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
         classpath("org.asciidoctor:asciidoctor-gradle-plugin:${asciidoctorPluginVersion}")
-        classpath("com.bmuschko:gradle-docker-plugin:${dockerPluginVersion}")
     }
 }
 
@@ -21,29 +19,12 @@ import com.bmuschko.gradle.docker.tasks.container.DockerStopContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
 import groovy.json.JsonSlurper
 
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'org.springframework.boot'
-apply plugin: 'checkstyle'
 apply plugin: 'org.asciidoctor.convert'
-apply plugin: 'com.bmuschko.docker-remote-api'
-
-group = 'org.conjugates'
-
-checkstyle {
-    toolVersion = checkstyleToolVersion
-    configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
-}
 
 ext {
     snippetsDir = file('build/generated-snippets')
-    imageBuildDir = file("${project.buildDir}/image")
-}
-
-sourceCompatibility = 1.8
-
-repositories {
-    mavenCentral()
+    port = 9090
+    containerName = 'analyzer'
 }
 
 dependencies {
@@ -59,7 +40,7 @@ dependencies {
 }
 
 task prepareImageBuildDir(type: Copy) {
-    from("${project.rootDir}/infrastructure/analyzer") {
+    from("${project.rootDir}/infrastructure/${containerName}") {
         filesMatching("application.properties") { props ->
             props.expand(version: project.version, commit: project.gitCommit)
         }
@@ -74,7 +55,7 @@ task prepareImageBuildDir(type: Copy) {
 task buildImage(type: DockerBuildImage) {
     dependsOn assemble, prepareImageBuildDir
     inputDir = imageBuildDir
-    tag "${dockerUsername}/analyzer:${project.version}"
+    tag "${dockerUsername}/${containerName}:${project.version}"
 }
 
 task removeImage(type: DockerRemoveImage) {
@@ -83,7 +64,7 @@ task removeImage(type: DockerRemoveImage) {
 
 task pushImage(type: DockerPushImage) {
     dependsOn buildImage
-    imageName "${dockerUsername}/analyzer"
+    imageName "${dockerUsername}/${containerName}"
     tag project.version
     registryCredentials = new DockerRegistryCredentials()
     registryCredentials.username = dockerUsername
@@ -93,7 +74,7 @@ task pushImage(type: DockerPushImage) {
 task createContainer(type: DockerCreateContainer) {
     dependsOn pushImage
     targetImageId { buildImage.getImageId() }
-    portBindings = ['8080:8080']
+    portBindings = ["${port}:${port}"]
 }
 
 task startContainer(type: DockerStartContainer) {
@@ -113,17 +94,10 @@ task removeContainer(type: DockerRemoveContainer) {
 task testContainer() {
     dependsOn startContainer
     doLast {
-        retry(5, 5000) {
-            def p = ['curl', "http://localhost:8080/api/info"].execute()
-            def text = p.text
-            if(text.empty) {
-                throw new RuntimeException("Waiting for analyzer to start")
-            }
-            def json = new JsonSlurper().parseText(text)
+        validateHttpEndpoint("http://localhost:${port}/api/info", containerName) { response ->
+            def json = new JsonSlurper().parseText(response)
             def version = json['version']
-            if(version != project.version) {
-                throw new RuntimeException("Waiting for analyzer to start")
-            }
+            return version == project.version
         }
     }
     finalizedBy removeContainer, removeImage
@@ -143,4 +117,3 @@ asciidoctor {
 tasks.check.dependsOn testContainer, asciidoctor
 // CIRCLE CI cannot remove docker images/containers
 [tasks.removeContainer, tasks.removeImage].each { t -> t.enabled = !System.getenv("CIRCLECI") }
-

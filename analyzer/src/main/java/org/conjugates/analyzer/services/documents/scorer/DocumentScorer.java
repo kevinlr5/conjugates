@@ -2,9 +2,11 @@ package org.conjugates.analyzer.services.documents.scorer;
 
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 
 import java.util.Collection;
+import java.util.Set;
 
 import org.conjugates.analyzer.services.documents.DocumentScore;
 import org.conjugates.analyzer.services.documents.Entity;
@@ -16,6 +18,10 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class DocumentScorer {
+
+  private static final Set<String> ALLOWED_TYPES = ImmutableSet.of(
+      "PERSON",
+      "ORGANIZATION");
 
   public DocumentScore score(ParsedDocument parsedDocument) {
     Multimap<Entity, ParsedSentence> entityToReferences =
@@ -29,11 +35,15 @@ public class DocumentScorer {
 
   private static Collection<EntityScore> calculateEntityScores(
       Multimap<Entity, ParsedSentence> entityToReferences) {
-    return FluentIterable.from(entityToReferences.keySet()).transform((Entity entity) -> {
-      Collection<ParsedSentence> references = entityToReferences.get(entity);
-      return calculateEntityScore(entity, references);
-    })
-    .toList();
+    return FluentIterable.from(entityToReferences.keySet())
+        .filter((Entity entity) -> {
+          return ALLOWED_TYPES.contains(entity.getType());
+        })
+        .transform((Entity entity) -> {
+          Collection<ParsedSentence> references = entityToReferences.get(entity);
+          return calculateEntityScore(entity, references);
+        })
+        .toList();
   }
 
   /**

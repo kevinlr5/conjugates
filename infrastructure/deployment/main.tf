@@ -148,14 +148,43 @@ resource "aws_iam_role_policy" "instance" {
 
 ## Security Groups
 
-resource "aws_security_group" "elb_sg" {
+resource "aws_security_group" "analyzer_elb_sg" {
   description = "controls access to the application ELB"
-  name   = "ecs-elb-sg-${var.deploy_id}"
+  name   = "ecs-elb-analyzer-sg-${var.deploy_id}"
   vpc_id = "${aws_vpc.main.id}"
 
   ingress {
     protocol    = "tcp"
-    from_port   = 8080
+    from_port   = 9090
+    to_port     = 9090
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
+
+    cidr_blocks = [
+      "0.0.0.0/0",
+    ]
+  }
+
+  tags {
+    deploy_id   = "${var.deploy_id}"
+    deploy_type = "${var.deploy_type}"
+    version     = "${var.version}"
+  }
+}
+
+resource "aws_security_group" "frontend_elb_sg" {
+  description = "controls access to the application ELB"
+  name   = "ecs-elb-frontend-sg-${var.deploy_id}"
+  vpc_id = "${aws_vpc.main.id}"
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = 80
     to_port     = 8080
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -184,11 +213,21 @@ resource "aws_security_group" "instance_sg" {
 
   ingress {
     protocol  = "tcp"
+    from_port = 9090
+    to_port   = 9090
+
+    security_groups = [
+      "${aws_security_group.analyzer_elb_sg.id}",
+    ]
+  }
+
+  ingress {
+    protocol  = "tcp"
     from_port = 8080
     to_port   = 8080
 
     security_groups = [
-      "${aws_security_group.elb_sg.id}",
+      "${aws_security_group.frontend_elb_sg.id}",
     ]
   }
 
@@ -233,12 +272,12 @@ resource "aws_launch_configuration" "app" {
   }
 }
 
-resource "aws_autoscaling_group" "app" {
+resource "aws_autoscaling_group" "analyzer_app" {
   name                 = "ecs-asg-${var.deploy_id}"
   vpc_zone_identifier  = ["${aws_subnet.main.*.id}"]
   min_size             = 1
   max_size             = 2
-  desired_capacity     = 1
+  desired_capacity     = 2
   launch_configuration = "${aws_launch_configuration.app.name}"
 
   tag {
@@ -262,13 +301,13 @@ resource "aws_elb" "analyzer-elb" {
   name               = "analyzer-elb-${var.deploy_id}"
   subnets            = ["${aws_subnet.main.*.id}"]
   security_groups    = [
-    "${aws_security_group.elb_sg.id}",
+    "${aws_security_group.analyzer_elb_sg.id}",
   ]
 
   listener {
-    instance_port     = 8080
+    instance_port     = 9090
     instance_protocol = "http"
-    lb_port           = 8080
+    lb_port           = 9090
     lb_protocol       = "http"
   }
 
@@ -276,7 +315,38 @@ resource "aws_elb" "analyzer-elb" {
     healthy_threshold   = 2
     unhealthy_threshold = 10
     timeout             = 3
-    target              = "HTTP:8080/api/info"
+    target              = "HTTP:9090/api/info"
+    interval            = 5
+  }
+
+  connection_draining = false
+
+  tags {
+    deploy_id   = "${var.deploy_id}"
+    deploy_type = "${var.deploy_type}"
+    version     = "${var.version}"
+  }
+}
+
+resource "aws_elb" "frontend-elb" {
+  name               = "frontend-elb-${var.deploy_id}"
+  subnets            = ["${aws_subnet.main.*.id}"]
+  security_groups    = [
+    "${aws_security_group.frontend_elb_sg.id}",
+  ]
+
+  listener {
+    instance_port     = 8080
+    instance_protocol = "http"
+    lb_port           = 80
+    lb_protocol       = "http"
+  }
+
+  health_check {
+    healthy_threshold   = 2
+    unhealthy_threshold = 10
+    timeout             = 3
+    target              = "HTTP:8080/"
     interval            = 5
   }
 
@@ -299,9 +369,29 @@ data "template_file" "analyzer_task_definition" {
   }
 }
 
+data "template_file" "frontend_task_definition" {
+  template = "${file("task_definitions/frontend.json")}"
+
+  vars {
+    docker_username = "${var.docker_username}"
+    version = "${var.version}"
+    deploy_id = "${var.deploy_id}"
+    analyzer_api_url = "${aws_elb.analyzer-elb.dns_name}"
+  }
+
+  depends_on = [
+    "aws_elb.analyzer-elb"
+  ]
+}
+
 resource "aws_ecs_task_definition" "analyzer" {
   family                = "analyzer-${var.deploy_id}"
   container_definitions = "${data.template_file.analyzer_task_definition.rendered}"
+}
+
+resource "aws_ecs_task_definition" "frontend" {
+  family                = "frontend-${var.deploy_id}"
+  container_definitions = "${data.template_file.frontend_task_definition.rendered}"
 }
 
 resource "aws_ecs_service" "analyzer" {
@@ -314,12 +404,31 @@ resource "aws_ecs_service" "analyzer" {
   load_balancer {
     elb_name       = "${aws_elb.analyzer-elb.id}"
     container_name = "analyzer-${var.deploy_id}"
-    container_port = 8080
+    container_port = 9090
   }
 
   depends_on = [
     "aws_iam_role_policy.ecs_service",
     "aws_elb.analyzer-elb"
+  ]
+}
+
+resource "aws_ecs_service" "frontend" {
+  name            = "frontend-${var.deploy_id}"
+  cluster         = "${aws_ecs_cluster.conjugates.id}"
+  task_definition = "${aws_ecs_task_definition.frontend.arn}"
+  desired_count   = 1
+  iam_role        = "${aws_iam_role.ecs_service.name}"
+
+  load_balancer {
+    elb_name       = "${aws_elb.frontend-elb.id}"
+    container_name = "frontend-${var.deploy_id}"
+    container_port = 8080
+  }
+
+  depends_on = [
+    "aws_iam_role_policy.ecs_service",
+    "aws_elb.frontend-elb"
   ]
 }
 
@@ -329,4 +438,8 @@ resource "aws_ecs_cluster" "conjugates" {
 
 output "analyzer_ip_address" {
   value = "${aws_elb.analyzer-elb.dns_name}"
+}
+
+output "frontend_ip_address" {
+  value = "${aws_elb.frontend-elb.dns_name}"
 }
