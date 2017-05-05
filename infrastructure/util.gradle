@@ -42,10 +42,20 @@ def createTerraformStateBucketName() {
 
 def validateDeploymentUp(terraformBuildDir) {
     // Retry for 10 minutes
-    retry(200, 5000) {
-        validateFrontendUp()
-        validateAnalyzerUp()
-        println "Deployment up!"
+    retry(120, 5000) {
+        def frontendUp = validateFrontendUp()
+        def analyzerUp = validateAnalyzerUp()
+        if(frontendUp && analyzerUp) {
+            println "Deployment up!"
+        } else {
+            if(!frontendUp) {
+                println "Waiting for frontend to come up"
+            }
+            if(!analyzerUp) {
+                println "Waiting for analyzer to come up"
+            }
+            throw new RuntimeException("Deployment not up")
+        }
     }
 }
 
@@ -55,14 +65,12 @@ def validateAnalyzerUp() {
     def p = ['curl', infoEndpoint].execute()
     def text = p.text
     if(text.empty) {
-        throw new RuntimeException("Waiting for analyzer to come up")
+        return false
+    } else {
+        def json = new JsonSlurper().parseText(text)
+        def version = json['version']
+        return version == project.version
     }
-    def json = new JsonSlurper().parseText(text)
-    def version = json['version']
-    if(version != project.version) {
-        throw new RuntimeException("Waiting for analyzer to come up")
-    }
-    println "Analyzer up!"
 }
 
 def validateFrontendUp() {
@@ -70,13 +78,7 @@ def validateFrontendUp() {
     def home = frontendIp + ':80/'
     def p = ['curl', home].execute()
     def text = p.text
-    if(text.empty) {
-        throw new RuntimeException("Waiting for frontend to come up")
-    }
-    if(!text.contains('Conjugates')) {
-        throw new RuntimeException("Waiting for frontend to come up")
-    }
-    println "Frontend up!"
+    return !text.empty && text.contains('Conjugates')
 }
 
 def deleteS3Object(key, secretKey, bucketName, keyName) {
