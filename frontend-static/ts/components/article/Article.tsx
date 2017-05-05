@@ -1,35 +1,85 @@
 import * as React from 'react';
 import ArticleForm from './ArticleForm';
 import AnalyzedArticle from './AnalyzedArticle';
-import {connect} from 'react-redux';
-import {dispatchToPropsObject} from '../../actions';
+import articleApi from '../../api/article';
 
-interface StateProps {
+interface State {
+    title: string;
+    body: string;
+    loading: boolean;
     analyzeArticleResponse: AnalyzeArticleResponse | null;
 }
 
-type Props =  DispatchProps & StateProps;
+export default class Article extends React.Component<{}, State> {
 
-function mapStateToProps(state: AppState): StateProps {
-    return {
-        analyzeArticleResponse: state.article.analyzeArticleResponse,
-    };
-}
-
-class Article extends React.Component<Props, {}> {
+    constructor(props: {}, context: any) {
+        super(props, context);
+        this.handleClear = this.handleClear.bind(this);
+        this.handleChangeTitle = this.handleChangeTitle.bind(this);
+        this.handleChangeBody = this.handleChangeBody.bind(this);
+        this.handleSubmit = this.handleSubmit.bind(this);
+        this.state = {
+            title: '',
+            body: '',
+            loading: false,
+            analyzeArticleResponse: null,
+        };
+    }
 
     public render() {
-        if (this.props.analyzeArticleResponse) {
+        if (this.state.analyzeArticleResponse) {
             return <AnalyzedArticle
-                handleClear={this.props.clearArticle}
-                analyzeArticleResponse={this.props.analyzeArticleResponse}
+                analyzeArticleResponse={this.state.analyzeArticleResponse}
+                handleClear={this.handleClear}
             />;
         } else {
-            return <ArticleForm handleSubmit={this.props.analyzeArticle} />;
+            return <ArticleForm
+                title={this.state.title}
+                body={this.state.body}
+                loading={this.state.loading}
+                handleChangeTitle={this.handleChangeTitle}
+                handleChangeBody={this.handleChangeBody}
+                handleSubmit={this.handleSubmit}
+            />;
         }
     }
 
-}
+    private handleClear() {
+        this.setState({
+            title: '',
+            body: '',
+            loading: false,
+            analyzeArticleResponse: null,
+        });
+    }
 
-export default connect<StateProps, DispatchProps, {}>
-    (mapStateToProps, dispatchToPropsObject)(Article);
+    private handleChangeTitle(event: React.FormEvent<HTMLInputElement>) {
+        this.setState({title: event.currentTarget.value});
+    }
+
+    private handleChangeBody(event: React.FormEvent<HTMLTextAreaElement>) {
+        this.setState({body: event.currentTarget.value});
+    }
+
+    private handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        this.setState({loading: true});
+        const request = {
+            title: this.state.title,
+            body: this.state.body,
+        };
+        this.analyzeArticle(request);
+    }
+
+    private analyzeArticle(request: AnalyzeArticleRequest) {
+        articleApi.analyzeArticle(request).then(result => {
+            this.setState({
+                title: '',
+                body: '',
+                loading: false,
+                analyzeArticleResponse: result,
+            });
+        });
+    }
+
+}
