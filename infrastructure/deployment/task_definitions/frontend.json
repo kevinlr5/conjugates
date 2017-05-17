@@ -2,7 +2,7 @@
     {
         "name": "frontend-${deploy_id}",
         "image": "${docker_username}/frontend:${version}",
-        "cpu": 256,
+        "cpu": 1024,
         "memory": 768,
         "essential": true,
         "portMappings": [
