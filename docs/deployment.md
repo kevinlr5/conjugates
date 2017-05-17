@@ -16,10 +16,12 @@ Conjugates uses Terraform to setup the AWS account for deployment and to create 
 2. Get keys for your root account and export them as `AWS_ACCESS_KEY_ROOT` and `AWS_SECRET_KEY_ROOT`.
 3. Create a dockerhub account.
 4. Export your dockerhub username and password as `DOCKER_USERNAME` and `DOCKER_PASSWORD`.
-5. Install terraform and place it on your path.
-6. `./gradlew clean createAwsAccount`
-7. In the ouput, you should see a variable called `terraform_bucket_name`. Save its value.
-8. Login to the AWS console, generate keys for the `deployer` IAM user, and save the keys locally.
+5. Register your domain name in the Route53 default hosted zone
+6. Create a cert in Certificate Manager for `www.yourdomain.com` with `api.yourdomain.com` and `yourdomain.com` as alternates
+7. Install terraform and place it on your path.
+8. `./gradlew clean createAwsAccount`
+9. In the ouput, you should see a variable called `terraform_bucket_name`. Save its value.
+10. Login to the AWS console, generate keys for the `deployer` IAM user, and save the keys locally.
 
 ## Structure of the account
 
@@ -40,19 +42,24 @@ Conjugates is a straightforward containerized application that is deployed using
 1. Install docker
 2. Export the value of `terraform_bucket_name` as `TERRAFORM_STATE_BUCKET_NAME`
 3. Export the keys for the `deployer` account as `AWS_ACCESS_KEY_DEPLOYMENT` and `AWS_SECRET_KEY_DEPLOYMENT`.
-4. `./gradlew clean build deployTest`
-5. The previous command will complete when it verifies that the deployment is working. It writes its state to the S3 bucket.
-6. To destroy the test deployment, take the deployId from the log and run `./gradlew clean destroyDeployTest -PdeployId=theId`
+4. Export the ARN of your cert as `AWS_CERT_ARN`
+5. `./gradlew clean build deployTest`
+6. The previous command will complete when it verifies that the deployment is working. It writes its state to the S3 bucket.
+7. To destroy the test deployment, take the deployId from the log and run `./gradlew clean destroyDeployTest -PdeployId=theId`
 
 ## Configuring a CI/CD server (CircleCi)
 
 1. Hook up CircleCi to your github repo
 2. Create a trusty Ubuntu build for the repo and disable builds for non-PRs
-3. In the build settings, export the `AWS_ACCESS_KEY_DEPLOYMENT`, `AWS_SECRET_KEY_DEPLOYMENT`, `DOCKER_USERNAME`, `DOCKER_PASSWORD`, and `TERRAFORM_STATE_BUCKET_NAME` environment variables
+3. In the build settings, export the `AWS_ACCESS_KEY_DEPLOYMENT`, `AWS_SECRET_KEY_DEPLOYMENT`, `AWS_CERT_ARN`, `DOCKER_USERNAME`, `DOCKER_PASSWORD`, and `TERRAFORM_STATE_BUCKET_NAME` environment variables
 
 - A full deploy to AWS will occur on each PR build
 - The persistent `develop` instance will be upgraded after each merge to develop
 
 ## Continuous deployment of develop (with zero downtime upgrades)
 
-The CI/CD build is designed to create a persistent deployment based on the `develop` branch. Each merge to `develop` upgrades this deployment with zero downtime. The strategy employed is a variant of blue/green upgrading. A second full `develop` deployment is created and tested alongside the old one. When it's ready to go, the new deployment becomes the primary deployment and the old deployment is destroyed.
+The CI/CD build is designed to create a persistent deployment based on the `develop` branch. Each merge to `develop` upgrades this deployment with zero downtime. The strategy employed is a variant of blue/green upgrading. A second full `develop` deployment is created and tested alongside the old one. When it's ready to go, a DNS based switchover occurs. ALIAS records are updated with a 60 second TTL to point at the new deployment and the old deployment is destroyed. Users of the frontend should not see an interruption.
+
+## DNS vs ELB style upgrades
+
+This project currently uses DNS based upgrading, but that form of upgrade is sub-optimal because of client-side DNS caching. It's being utilized because it's simple. An alternate technique allows public DNS queries to resolve to the same address, but switches out the servers underneath. This can be achieved by pointing at a single ELB and rotating the EC2 instances registered to it. There is more information here: https://cloudnative.io/blog/2015/02/the-dos-and-donts-of-bluegreen-deployment/
