@@ -436,10 +436,18 @@ resource "aws_ecs_cluster" "conjugates" {
   name = "${var.ecs_cluster_name}-${var.deploy_id}"
 }
 
-output "analyzer_ip_address" {
+output "analyzer_dns_name" {
   value = "${aws_elb.analyzer-elb.dns_name}"
 }
 
-output "frontend_ip_address" {
+output "frontend_dns_name" {
   value = "${aws_elb.frontend-elb.dns_name}"
+}
+
+output "analyzer_hosted_zone" {
+  value = "${aws_elb.analyzer-elb.zone_id}"
+}
+
+output "frontend_hosted_zone" {
+  value = "${aws_elb.frontend-elb.zone_id}"
 }

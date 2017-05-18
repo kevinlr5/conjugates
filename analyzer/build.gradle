@@ -29,7 +29,6 @@ ext {
 
 dependencies {
     compile('org.springframework.boot:spring-boot-starter-aop')
-    // compile('org.springframework.boot:spring-boot-starter-security')
     compile('org.springframework.boot:spring-boot-starter-web')
     compile("edu.stanford.nlp:stanford-corenlp:${stanfordNlpVersion}")
     compile("edu.stanford.nlp:stanford-corenlp:${stanfordNlpVersion}:models@jar")

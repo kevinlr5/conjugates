@@ -18,17 +18,31 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.route53.AmazonRoute53Client;
+import com.amazonaws.services.route53.model.AliasTarget;
+import com.amazonaws.services.route53.model.Change;
+import com.amazonaws.services.route53.model.ChangeAction;
+import com.amazonaws.services.route53.model.ChangeBatch;
+import com.amazonaws.services.route53.model.ChangeResourceRecordSetsRequest;
+import com.amazonaws.services.route53.model.RRType;
+import com.amazonaws.services.route53.model.ResourceRecordSet;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary
 import com.amazonaws.services.s3.model.S3Object;
 
+
 import org.apache.commons.io.FileUtils;
 
 def createS3Client(key, secretKey) {
     def creds = new BasicAWSCredentials(key, secretKey)
     return new AmazonS3Client(creds)
+}
+
+def createRoute53Client(key, secretKey) {
+    def creds = new BasicAWSCredentials(key, secretKey);
+    return new AmazonRoute53Client(creds);
 }
 
 def createRandomNumber() {
@@ -60,7 +74,7 @@ def validateDeploymentUp(terraformBuildDir) {
 }
 
 def validateAnalyzerUp() {
-    def analyzerIp = getAnalyzerIpAddress(terraformBuildDir)
+    def analyzerIp = getAnalyzerDns(terraformBuildDir)
     def infoEndpoint = analyzerIp + ':9090/api/info/'
     def p = ['curl', infoEndpoint].execute()
     def text = p.text
@@ -74,7 +88,7 @@ def validateAnalyzerUp() {
 }
 
 def validateFrontendUp() {
-    def frontendIp = getFrontendIpAddress(terraformBuildDir)
+    def frontendIp = getFrontendDns(terraformBuildDir)
     def home = frontendIp + ':80/'
     def p = ['curl', home].execute()
     def text = p.text
@@ -86,24 +100,30 @@ def deleteS3Object(key, secretKey, bucketName, keyName) {
     s3client.deleteObject(bucketName, keyName)
 }
 
-def getAnalyzerIpAddress(terraformBuildDir) {
+def getTfOutputVariable(terraformBuildDir, variable) {
     def stdout = new ByteArrayOutputStream()
     exec {
         workingDir terraformBuildDir
-        commandLine 'terraform', 'output', 'analyzer_ip_address'
+        commandLine 'terraform', 'output', variable
         standardOutput = stdout
     }
     return stdout.toString().trim()
 }
 
-def getFrontendIpAddress(terraformBuildDir) {
-    def stdout = new ByteArrayOutputStream()
-    exec {
-        workingDir terraformBuildDir
-        commandLine 'terraform', 'output', 'frontend_ip_address'
-        standardOutput = stdout
-    }
-    return stdout.toString().trim()
+def getAnalyzerDns(terraformBuildDir) {
+    return getTfOutputVariable(terraformBuildDir, 'analyzer_dns_name')
+}
+
+def getFrontendDns(terraformBuildDir) {
+    return getTfOutputVariable(terraformBuildDir, 'frontend_dns_name')
+}
+
+def getAnalyzerHostedZone(terraformBuildDir) {
+    return getTfOutputVariable(terraformBuildDir, 'analyzer_hosted_zone')
+}
+
+def getFrontendHostedZone(terraformBuildDir) {
+    return getTfOutputVariable(terraformBuildDir, 'frontend_hosted_zone')
 }
 
 def getS3ObjectContents(key, secretKey, bucketName, keyName) {
@@ -112,6 +132,63 @@ def getS3ObjectContents(key, secretKey, bucketName, keyName) {
         return s3client.getObjectAsString(bucketName, keyName);
     } else {
         return null;
+    }
+}
+
+def promoteDns(key, secretKey, terraformBuildDir) {
+    def client = createRoute53Client(key, secretKey);
+    def hostedZoneId = client.listHostedZones().getHostedZones().first().getId()
+    def frontendElbDns = getFrontendDns(terraformBuildDir)
+    def analyzerElbDns = getAnalyzerDns(terraformBuildDir)
+    def frontendHostedZone = getFrontendHostedZone(terraformBuildDir)
+    def analyzerHostedZone = getAnalyzerHostedZone(terraformBuildDir)
+    client.changeResourceRecordSets(new ChangeResourceRecordSetsRequest()
+        .withHostedZoneId(hostedZoneId)
+        .withChangeBatch(new ChangeBatch()
+            .withChanges(
+                new Change(
+                    ChangeAction.UPSERT,
+                    new ResourceRecordSet("richardskevin.com", RRType.A)
+                    .withAliasTarget(new AliasTarget()
+                        .withHostedZoneId(frontendHostedZone)
+                        .withDNSName(frontendElbDns)
+                        .withEvaluateTargetHealth(false))),
+                new Change(
+                    ChangeAction.UPSERT,
+                    new ResourceRecordSet("api.richardskevin.com", RRType.A)
+                    .withAliasTarget(new AliasTarget()
+                        .withHostedZoneId(analyzerHostedZone)
+                        .withDNSName(analyzerElbDns)
+                        .withEvaluateTargetHealth(false))))))
+    def aliasTtlWait = 70000 // 60 second TTL + 10 extra seconds
+    sleep(aliasTtlWait)
+}
+
+def promoteCore(
+    key,
+    secretKey,
+    terraformStateBucketName,
+    terraformBuildDir,
+    deployType,
+    newDeployId,
+    oldDeployId) {
+    promoteDns(key, secretKey, terraformBuildDir)
+    putS3Object(
+        key,
+        secretKey,
+        terraformStateBucketName,
+        "${deployType}/deployid.txt",
+        newDeployId
+    )
+    if(oldDeployId != null) {
+        destroyDeploy(
+            key,
+            secretKey,
+            oldDeployId,
+            deployType,
+            terraformStateBucketName,
+            terraformBuildDir
+        )
     }
 }
 
@@ -246,21 +323,13 @@ ext.deployCore = {
         terraformStateBucketName,
         "${deployType}/deployid.txt"
     )
-    putS3Object(
+    promoteCore(
         awsAccessKeyDeployment,
         awsSecretKeyDeployment,
         terraformStateBucketName,
-        "${deployType}/deployid.txt",
-        newDeployId
+        terraformBuildDir,
+        deployType,
+        newDeployId,
+        oldDeployId
     )
-    if(oldDeployId != null) {
-        destroyDeploy(
-            awsAccessKeyDeployment,
-            awsSecretKeyDeployment,
-            oldDeployId,
-            deployType,
-            terraformStateBucketName,
-            terraformBuildDir
-        )
-    }
 }

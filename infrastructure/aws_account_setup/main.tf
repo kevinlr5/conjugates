@@ -128,6 +128,8 @@ resource "aws_iam_group_policy" "deployers" {
         "iam:PassRole",
         "iam:PutRolePolicy",
         "iam:RemoveRoleFromInstanceProfile",
+        "route53:ChangeResourceRecordSets",
+        "route53:ListHostedZones",
         "s3:ListAllMyBuckets"
       ],
       "Resource": "*"
