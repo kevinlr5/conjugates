@@ -3,7 +3,7 @@
         "name": "analyzer-${deploy_id}",
         "image": "${docker_username}/analyzer:${version}",
         "cpu": 1024,
-        "memory": 768,
+        "memory": 1536,
         "essential": true,
         "portMappings": [
             {
