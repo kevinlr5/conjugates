@@ -6,6 +6,10 @@ variable "aws_secret_key_deployment" {
   description = "The AWS secret key for deployment."
 }
 
+variable "aws_cert_arn" {
+  description = "The website certificate ARN"
+}
+
 variable "region" {
   description = "The AWS region to create resources in."
   default = "us-west-2"
