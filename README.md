@@ -24,6 +24,10 @@ Additionally, this project is designed to use modern devops techniques including
 
 [Deploying Conjugates to AWS](docs/deployment.md)
 
+## Domains and TLS
+
+[Domain Configuration and TLS Certificates](docs/domainsandtls.md)
+
 ## Versioning and Releases
 
 [Versioning and Releases](docs/versioning.md)
