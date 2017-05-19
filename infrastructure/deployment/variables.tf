@@ -47,3 +47,7 @@ variable "amis" {
 variable "instance_type" {
   default = "t2.small"
 }
+
+variable "develop_api" {
+  default = "api.richardskevin.com"
+}
