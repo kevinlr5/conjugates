@@ -25,6 +25,7 @@ import com.amazonaws.services.route53.model.ChangeAction;
 import com.amazonaws.services.route53.model.ChangeBatch;
 import com.amazonaws.services.route53.model.ChangeResourceRecordSetsRequest;
 import com.amazonaws.services.route53.model.RRType;
+import com.amazonaws.services.route53.model.ResourceRecord;
 import com.amazonaws.services.route53.model.ResourceRecordSet;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -149,17 +150,23 @@ def promoteDns(key, secretKey, terraformBuildDir) {
                 new Change(
                     ChangeAction.UPSERT,
                     new ResourceRecordSet("richardskevin.com", RRType.A)
-                    .withAliasTarget(new AliasTarget()
-                        .withHostedZoneId(frontendHostedZone)
-                        .withDNSName(frontendElbDns)
-                        .withEvaluateTargetHealth(false))),
+                        .withAliasTarget(new AliasTarget()
+                            .withHostedZoneId(frontendHostedZone)
+                            .withDNSName(frontendElbDns)
+                            .withEvaluateTargetHealth(false))),
                 new Change(
                     ChangeAction.UPSERT,
                     new ResourceRecordSet("api.richardskevin.com", RRType.A)
-                    .withAliasTarget(new AliasTarget()
-                        .withHostedZoneId(analyzerHostedZone)
-                        .withDNSName(analyzerElbDns)
-                        .withEvaluateTargetHealth(false))))))
+                        .withAliasTarget(new AliasTarget()
+                            .withHostedZoneId(analyzerHostedZone)
+                            .withDNSName(analyzerElbDns)
+                            .withEvaluateTargetHealth(false))),
+                new Change(
+                    ChangeAction.UPSERT,
+                    new ResourceRecordSet("www.richardskevin.com", RRType.CNAME)
+                        .withResourceRecords(new ResourceRecord("richardskevin.com"))
+                        .withTTL(60L)))))
+    println 'Promoted. Waiting to for DNS TTL'
     def aliasTtlWait = 70000 // 60 second TTL + 10 extra seconds
     sleep(aliasTtlWait)
 }
