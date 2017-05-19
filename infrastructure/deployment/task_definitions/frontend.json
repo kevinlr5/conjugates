@@ -15,7 +15,7 @@
         "links": [],
         "command": [],
         "entryPoint": [],
-        "environment" : [{ "name" : "ANALYZER_API_URL", "value" : "http://${analyzer_api_url}:9090" }],
+        "environment" : [{ "name" : "ANALYZER_API_URL", "value" : "https://${analyzer_api_url}:8443" }],
         "mountPoints": []
     }
 ]

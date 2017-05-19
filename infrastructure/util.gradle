@@ -76,8 +76,8 @@ def validateDeploymentUp(terraformBuildDir) {
 
 def validateAnalyzerUp() {
     def analyzerIp = getAnalyzerDns(terraformBuildDir)
-    def infoEndpoint = analyzerIp + ':9090/api/info/'
-    def p = ['curl', infoEndpoint].execute()
+    def infoEndpoint = 'https://' + analyzerIp + ':8443/api/info/'
+    def p = ['curl', '-k', infoEndpoint].execute()
     def text = p.text
     if(text.empty) {
         return false
@@ -90,8 +90,8 @@ def validateAnalyzerUp() {
 
 def validateFrontendUp() {
     def frontendIp = getFrontendDns(terraformBuildDir)
-    def home = frontendIp + ':80/'
-    def p = ['curl', home].execute()
+    def home = 'https://' + frontendIp + ':443/'
+    def p = ['curl', '-k', home].execute()
     def text = p.text
     return !text.empty && text.contains('Conjugates')
 }
@@ -174,6 +174,7 @@ def promoteDns(key, secretKey, terraformBuildDir) {
 def promoteCore(
     key,
     secretKey,
+    certArn,
     terraformStateBucketName,
     terraformBuildDir,
     deployType,
@@ -191,6 +192,7 @@ def promoteCore(
         destroyDeploy(
             key,
             secretKey,
+            certArn,
             oldDeployId,
             deployType,
             terraformStateBucketName,
@@ -244,6 +246,7 @@ ext.runTerraform = { terraformWorkingDir, terraformArgs, terraformEnvironment ->
 ext.deploy = {
     awsAccessKeyDeployment,
     awsSecretKeyDeployment,
+    awsCertArn,
     deployId,
     deployType,
     terraformStateBucketName,
@@ -251,6 +254,7 @@ ext.deploy = {
     def terraformDeploymentEnvironment = [
         'TF_VAR_aws_access_key_deployment': awsAccessKeyDeployment,
         'TF_VAR_aws_secret_key_deployment': awsSecretKeyDeployment,
+        'TF_VAR_aws_cert_arn': awsCertArn,
         'TF_VAR_version': project.version,
         'TF_VAR_deploy_id': deployId,
         'TF_VAR_deploy_type': deployType,
@@ -277,6 +281,7 @@ ext.deploy = {
 ext.destroyDeploy = {
     awsAccessKeyDeployment,
     awsSecretKeyDeployment,
+    awsCertArn,
     deployId,
     deployType,
     terraformStateBucketName,
@@ -284,6 +289,7 @@ ext.destroyDeploy = {
     def terraformDeploymentEnvironment = [
         'TF_VAR_aws_access_key_deployment': awsAccessKeyDeployment,
         'TF_VAR_aws_secret_key_deployment': awsSecretKeyDeployment,
+        'TF_VAR_aws_cert_arn': awsCertArn,
         'TF_VAR_version': project.version,
         'TF_VAR_deploy_id': deployId,
         'TF_VAR_deploy_type': deployType,
@@ -312,6 +318,7 @@ ext.destroyDeploy = {
 ext.deployCore = {
     awsAccessKeyDeployment,
     awsSecretKeyDeployment,
+    awsCertArn,
     deployType,
     terraformStateBucketName,
     terraformBuildDir ->
@@ -319,6 +326,7 @@ ext.deployCore = {
     deploy(
         awsAccessKeyDeployment,
         awsSecretKeyDeployment,
+        awsCertArn,
         newDeployId,
         deployType,
         terraformStateBucketName,
@@ -333,6 +341,7 @@ ext.deployCore = {
     promoteCore(
         awsAccessKeyDeployment,
         awsSecretKeyDeployment,
+        awsCertArn,
         terraformStateBucketName,
         terraformBuildDir,
         deployType,

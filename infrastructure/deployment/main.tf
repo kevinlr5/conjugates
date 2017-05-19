@@ -155,7 +155,7 @@ resource "aws_security_group" "analyzer_elb_sg" {
 
   ingress {
     protocol    = "tcp"
-    from_port   = 9090
+    from_port   = 8443
     to_port     = 9090
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -184,7 +184,7 @@ resource "aws_security_group" "frontend_elb_sg" {
 
   ingress {
     protocol    = "tcp"
-    from_port   = 80
+    from_port   = 443
     to_port     = 8080
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -307,8 +307,9 @@ resource "aws_elb" "analyzer-elb" {
   listener {
     instance_port     = 9090
     instance_protocol = "http"
-    lb_port           = 9090
-    lb_protocol       = "http"
+    lb_port           = 8443
+    lb_protocol       = "https"
+    ssl_certificate_id = "${var.aws_cert_arn}"
   }
 
   health_check {
@@ -338,8 +339,9 @@ resource "aws_elb" "frontend-elb" {
   listener {
     instance_port     = 8080
     instance_protocol = "http"
-    lb_port           = 80
-    lb_protocol       = "http"
+    lb_port           = 443
+    lb_protocol       = "https"
+    ssl_certificate_id = "${var.aws_cert_arn}"
   }
 
   health_check {
