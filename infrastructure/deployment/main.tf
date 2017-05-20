@@ -189,6 +189,13 @@ resource "aws_security_group" "frontend_elb_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    protocol    = "tcp"
+    from_port   = 80
+    to_port     = 8080
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port = 0
     to_port   = 0
@@ -342,6 +349,13 @@ resource "aws_elb" "frontend-elb" {
     lb_port           = 443
     lb_protocol       = "https"
     ssl_certificate_id = "${var.aws_cert_arn}"
+  }
+
+  listener {
+    instance_port     = 8080
+    instance_protocol = "http"
+    lb_port           = 80
+    lb_protocol       = "http"
   }
 
   health_check {
