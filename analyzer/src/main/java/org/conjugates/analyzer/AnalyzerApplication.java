@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.security.Security;
+
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -26,6 +28,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 public class AnalyzerApplication {
 
   public static void main(String[] args) {
+    Security.setProperty("networkaddress.cache.ttl" , "30");
     SpringApplication application = new SpringApplication(AnalyzerApplication.class);
     application.setBannerMode(Mode.OFF);
     application.run(args);
