@@ -136,7 +136,7 @@ def getS3ObjectContents(key, secretKey, bucketName, keyName) {
     }
 }
 
-def promoteDns(key, secretKey, terraformBuildDir) {
+def promoteDns(key, secretKey, terraformBuildDir, domain) {
     def client = createRoute53Client(key, secretKey);
     def hostedZoneId = client.listHostedZones().getHostedZones().first().getId()
     def frontendElbDns = getFrontendDns(terraformBuildDir)
@@ -149,24 +149,24 @@ def promoteDns(key, secretKey, terraformBuildDir) {
             .withChanges(
                 new Change(
                     ChangeAction.UPSERT,
-                    new ResourceRecordSet("richardskevin.com", RRType.A)
+                    new ResourceRecordSet(domain, RRType.A)
                         .withAliasTarget(new AliasTarget()
                             .withHostedZoneId(frontendHostedZone)
                             .withDNSName(frontendElbDns)
                             .withEvaluateTargetHealth(false))),
                 new Change(
                     ChangeAction.UPSERT,
-                    new ResourceRecordSet("api.richardskevin.com", RRType.A)
+                    new ResourceRecordSet("api.${domain}", RRType.A)
                         .withAliasTarget(new AliasTarget()
                             .withHostedZoneId(analyzerHostedZone)
                             .withDNSName(analyzerElbDns)
                             .withEvaluateTargetHealth(false))),
                 new Change(
                     ChangeAction.UPSERT,
-                    new ResourceRecordSet("www.richardskevin.com", RRType.CNAME)
-                        .withResourceRecords(new ResourceRecord("richardskevin.com"))
+                    new ResourceRecordSet("www.${domain}", RRType.CNAME)
+                        .withResourceRecords(new ResourceRecord(domain))
                         .withTTL(60L)))))
-    println 'Promoted. Waiting to for DNS TTL'
+    println "Promoted to ${domain}. Waiting to for DNS TTL"
     def aliasTtlWait = 70000 // 60 second TTL + 10 extra seconds
     sleep(aliasTtlWait)
 }
@@ -179,8 +179,9 @@ def promoteCore(
     terraformBuildDir,
     deployType,
     newDeployId,
-    oldDeployId) {
-    promoteDns(key, secretKey, terraformBuildDir)
+    oldDeployId,
+    domain) {
+    promoteDns(key, secretKey, terraformBuildDir, domain)
     putS3Object(
         key,
         secretKey,
@@ -250,7 +251,8 @@ ext.deploy = {
     deployId,
     deployType,
     terraformStateBucketName,
-    terraformBuildDir ->
+    terraformBuildDir,
+    domain = 'none' ->
     def terraformDeploymentEnvironment = [
         'TF_VAR_aws_access_key_deployment': awsAccessKeyDeployment,
         'TF_VAR_aws_secret_key_deployment': awsSecretKeyDeployment,
@@ -258,7 +260,8 @@ ext.deploy = {
         'TF_VAR_version': project.version,
         'TF_VAR_deploy_id': deployId,
         'TF_VAR_deploy_type': deployType,
-        'TF_VAR_docker_username': dockerUsername
+        'TF_VAR_docker_username': dockerUsername,
+        'TF_VAR_api_address' : "api.${domain}"
     ]
     try {
         runTerraform(
@@ -321,7 +324,8 @@ ext.deployCore = {
     awsCertArn,
     deployType,
     terraformStateBucketName,
-    terraformBuildDir ->
+    terraformBuildDir,
+    domain ->
     def newDeployId = createDeployId(deployType)
     deploy(
         awsAccessKeyDeployment,
@@ -330,7 +334,8 @@ ext.deployCore = {
         newDeployId,
         deployType,
         terraformStateBucketName,
-        terraformBuildDir
+        terraformBuildDir,
+        domain
     )
     def oldDeployId = getS3ObjectContents(
         awsAccessKeyDeployment,
@@ -346,6 +351,6 @@ ext.deployCore = {
         terraformBuildDir,
         deployType,
         newDeployId,
-        oldDeployId
-    )
+        oldDeployId,
+        domain)
 }

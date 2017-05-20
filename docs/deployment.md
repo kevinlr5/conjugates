@@ -16,12 +16,13 @@ Conjugates uses Terraform to setup the AWS account for deployment and to create 
 2. Get keys for your root account and export them as `AWS_ACCESS_KEY_ROOT` and `AWS_SECRET_KEY_ROOT`.
 3. Create a dockerhub account.
 4. Export your dockerhub username and password as `DOCKER_USERNAME` and `DOCKER_PASSWORD`.
-5. Register your domain name in the Route53 default hosted zone
-6. Create a cert in Certificate Manager for `www.yourdomain.com` with `api.yourdomain.com` and `yourdomain.com` as alternates
-7. Install terraform and place it on your path.
-8. `./gradlew clean createAwsAccount`
-9. In the ouput, you should see a variable called `terraform_bucket_name`. Save its value.
-10. Login to the AWS console, generate keys for the `deployer` IAM user, and save the keys locally.
+5. Register your domain name (`yourdomain.com`) in the Route53 default hosted zone
+6. Export `yourdomain.com` as `DOMAIN`
+7. Create a cert in Certificate Manager for `www.yourdomain.com` with `api.yourdomain.com` and `yourdomain.com` as alternates
+8. Install terraform and place it on your path.
+9. `./gradlew clean createAwsAccount`
+10. In the ouput, you should see a variable called `terraform_bucket_name`. Save its value.
+11. Login to the AWS console, generate keys for the `deployer` IAM user, and save the keys locally.
 
 ## Structure of the account
 
@@ -51,7 +52,7 @@ Conjugates is a straightforward containerized application that is deployed using
 
 1. Hook up CircleCi to your github repo
 2. Create a trusty Ubuntu build for the repo and disable builds for non-PRs
-3. In the build settings, export the `AWS_ACCESS_KEY_DEPLOYMENT`, `AWS_SECRET_KEY_DEPLOYMENT`, `AWS_CERT_ARN`, `DOCKER_USERNAME`, `DOCKER_PASSWORD`, and `TERRAFORM_STATE_BUCKET_NAME` environment variables
+3. In the build settings, export the `AWS_ACCESS_KEY_DEPLOYMENT`, `AWS_SECRET_KEY_DEPLOYMENT`, `AWS_CERT_ARN`, `DOCKER_USERNAME`, `DOCKER_PASSWORD`, `DOMAIN`, and `TERRAFORM_STATE_BUCKET_NAME` environment variables
 
 - A full deploy to AWS will occur on each PR build
 - The persistent `develop` instance will be upgraded after each merge to develop

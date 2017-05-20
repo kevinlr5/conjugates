@@ -392,7 +392,7 @@ data "template_file" "frontend_task_definition" {
     docker_username = "${var.docker_username}"
     version = "${var.version}"
     deploy_id = "${var.deploy_id}"
-    analyzer_api_url = "${var.deploy_type == "test" ? aws_elb.analyzer-elb.dns_name : var.develop_api}"
+    analyzer_api_url = "${var.deploy_type == "test" ? aws_elb.analyzer-elb.dns_name : var.api_address}"
   }
 
   depends_on = [

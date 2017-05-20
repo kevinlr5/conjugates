@@ -52,6 +52,7 @@ variable "instance_type" {
   default = "t2.small"
 }
 
-variable "develop_api" {
-  default = "api.richardskevin.com"
+variable "api_address" {
+  description = "The api of the analyzer"
+  default = "none"
 }
