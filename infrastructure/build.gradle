@@ -6,6 +6,8 @@ ext {
     awsSecretKeyRoot = System.getenv("AWS_SECRET_KEY_ROOT")
     awsAccessKeyDeployment = System.getenv("AWS_ACCESS_KEY_DEPLOYMENT")
     awsSecretKeyDeployment = System.getenv("AWS_SECRET_KEY_DEPLOYMENT")
+    awsCertArn = System.getenv("AWS_CERT_ARN")
+    domain = System.getenv("DOMAIN")
     terraformBuildDir = "${project.buildDir}/terraform"
 }
 
@@ -83,6 +85,7 @@ task deployTest() {
         deploy(
             awsAccessKeyDeployment,
             awsSecretKeyDeployment,
+            awsCertArn,
             deployId,
             deployType,
             terraformStateBucketName,
@@ -97,11 +100,11 @@ task destroyDeploy() {
         destroyDeploy(
             awsAccessKeyDeployment,
             awsSecretKeyDeployment,
+            awsCertArn,
             deployId,
             deployType,
             terraformStateBucketName,
-            terraformBuildDir
-        )
+            terraformBuildDir)
     }
 }
 
@@ -114,6 +117,7 @@ task testDeploy() {
             deploy(
                 awsAccessKeyDeployment,
                 awsSecretKeyDeployment,
+                awsCertArn,
                 deployId,
                 deployType,
                 terraformStateBucketName,
@@ -122,11 +126,11 @@ task testDeploy() {
             destroyDeploy(
                 awsAccessKeyDeployment,
                 awsSecretKeyDeployment,
+                awsCertArn,
                 deployId,
                 deployType,
                 terraformStateBucketName,
-                terraformBuildDir
-            )
+                terraformBuildDir)
         }
     }
 }
@@ -138,9 +142,10 @@ task deployDevelop() {
         deployCore(
             awsAccessKeyDeployment,
             awsSecretKeyDeployment,
+            awsCertArn,
             deployType,
             terraformStateBucketName,
-            terraformBuildDir
-        )
+            terraformBuildDir,
+            domain)
     }
 }

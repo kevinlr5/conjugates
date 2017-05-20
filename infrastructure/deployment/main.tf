@@ -155,7 +155,7 @@ resource "aws_security_group" "analyzer_elb_sg" {
 
   ingress {
     protocol    = "tcp"
-    from_port   = 9090
+    from_port   = 8443
     to_port     = 9090
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -181,6 +181,13 @@ resource "aws_security_group" "frontend_elb_sg" {
   description = "controls access to the application ELB"
   name   = "ecs-elb-frontend-sg-${var.deploy_id}"
   vpc_id = "${aws_vpc.main.id}"
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = 443
+    to_port     = 8080
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   ingress {
     protocol    = "tcp"
@@ -307,8 +314,9 @@ resource "aws_elb" "analyzer-elb" {
   listener {
     instance_port     = 9090
     instance_protocol = "http"
-    lb_port           = 9090
-    lb_protocol       = "http"
+    lb_port           = 8443
+    lb_protocol       = "https"
+    ssl_certificate_id = "${var.aws_cert_arn}"
   }
 
   health_check {
@@ -334,6 +342,14 @@ resource "aws_elb" "frontend-elb" {
   security_groups    = [
     "${aws_security_group.frontend_elb_sg.id}",
   ]
+
+  listener {
+    instance_port     = 8080
+    instance_protocol = "http"
+    lb_port           = 443
+    lb_protocol       = "https"
+    ssl_certificate_id = "${var.aws_cert_arn}"
+  }
 
   listener {
     instance_port     = 8080
@@ -376,7 +392,7 @@ data "template_file" "frontend_task_definition" {
     docker_username = "${var.docker_username}"
     version = "${var.version}"
     deploy_id = "${var.deploy_id}"
-    analyzer_api_url = "${aws_elb.analyzer-elb.dns_name}"
+    analyzer_api_url = "${var.deploy_type == "test" ? aws_elb.analyzer-elb.dns_name : var.api_address}"
   }
 
   depends_on = [
@@ -436,10 +452,18 @@ resource "aws_ecs_cluster" "conjugates" {
   name = "${var.ecs_cluster_name}-${var.deploy_id}"
 }
 
-output "analyzer_ip_address" {
+output "analyzer_dns_name" {
   value = "${aws_elb.analyzer-elb.dns_name}"
 }
 
-output "frontend_ip_address" {
+output "frontend_dns_name" {
   value = "${aws_elb.frontend-elb.dns_name}"
+}
+
+output "analyzer_hosted_zone" {
+  value = "${aws_elb.analyzer-elb.zone_id}"
+}
+
+output "frontend_hosted_zone" {
+  value = "${aws_elb.frontend-elb.zone_id}"
 }
