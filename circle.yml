@@ -7,8 +7,8 @@ machine:
 dependencies:
   pre:
     - "[[ ! -s \"$(git rev-parse --git-dir)/shallow\" ]] || git fetch --unshallow"
-    - wget https://releases.hashicorp.com/terraform/0.8.8/terraform_0.8.8_linux_amd64.zip
-    - unzip terraform_0.8.8_linux_amd64.zip -d terraform
+    - wget https://releases.hashicorp.com/terraform/0.9.5/terraform_0.9.5_linux_amd64.zip
+    - unzip terraform_0.9.5_linux_amd64.zip -d terraform
     - mv terraform/terraform /home/ubuntu/bin/terraform
   override:
     - echo 'skipping dependencies'
