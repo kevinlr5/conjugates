@@ -1,2 +1,2 @@
-rootProject.name = 'conjugates'
+rootProject.name = 'sentiment'
 include 'analyzer', 'frontend-static', 'frontend-server', 'infrastructure'

@@ -1,4 +1,4 @@
-= Conjugates Analyzer REST Service API
+= Sentiment Analyzer REST Service API
 :doctype: book
 :icons: font
 :source-highlighter: highlightjs

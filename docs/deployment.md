@@ -1,10 +1,10 @@
 # Deployment
 
-This document describes how to deploy the conjugates project to AWS. This has been almost entirely automated, so it's as easy as setting up the CI/CD server! Each PR builds and deploys to AWS to validate that everything works and every merge to `develop` upgrades the persistent `develop` instance. The code that manages all of this can be found in the `infrastructure` project.
+This document describes how to deploy the Sentiment Analyzer project to AWS. This has been almost entirely automated, so it's as easy as setting up the CI/CD server! Each PR builds and deploys to AWS to validate that everything works and every merge to `develop` upgrades the persistent `develop` instance. The code that manages all of this can be found in the `infrastructure` project.
 
 ## Terraform
 
-Conjugates uses Terraform to setup the AWS account for deployment and to create the deployments. Terraform is a deployment orchestrator. It takes in configuration that describes a set of AWS resources, complete with dynamic configuration. When run, it materializes this state in AWS and saves it to a file. Part of the configuration of the AWS account is the creation of an S3 bucket to store these terraform state files, so deployments can later be destroyed or upgraded.
+The Sentiment Analyzer uses Terraform to setup the AWS account for deployment and to create the deployments. Terraform is a deployment orchestrator. It takes in configuration that describes a set of AWS resources, complete with dynamic configuration. When run, it materializes this state in AWS and saves it to a file. Part of the configuration of the AWS account is the creation of an S3 bucket to store these terraform state files, so deployments can later be destroyed or upgraded.
 
 ### Installing Terraform
 
@@ -30,13 +30,13 @@ The previous task creates an S3 bucket in the account for terraform state files.
 
 A deployment user is also created. This user, which is called `deployer`, only has permissions to do the tasks needed to create deployments in the account.
 
-## Deployments of conjugates
+## Deployments of the analyzer
 
-Deployments of conjugates can be done locally or through a CI/CD server (this repo is preconfigured with CircleCI). Each deployment creates a unique set of resources that is separate from other deployments. Therefore each deployment can be destroyed independently without affecting other deployments, making them easier to test.
+Deployments of the analyzer can be done locally or through a CI/CD server (this repo is preconfigured with CircleCI). Each deployment creates a unique set of resources that is separate from other deployments. Therefore each deployment can be destroyed independently without affecting other deployments, making them easier to test.
 
 ## Structure of a deployment
 
-Conjugates is a straightforward containerized application that is deployed using Amazon ECS. An ECS cluster is created with an analyzer and frontend services that each have one exposed port. Internally, there are two ELB instances on top of EC2 instances. The EC2 instances are running ECS optimized images (coreos), which are running the analyzer and frontend docker containers retrieved from dockerhub. All of these EC2 resources are running inside a VPC and do not allow outside access except to the single ports exposed by the ELBs. In order to facilitate proper communication, there are some IAM resources created that are utilized by some of the services.
+The Sentiment Analyzer is a straightforward containerized application that is deployed using Amazon ECS. An ECS cluster is created with an analyzer and frontend services that each have one exposed port. Internally, there are two ELB instances on top of EC2 instances. The EC2 instances are running ECS optimized images (coreos), which are running the analyzer and frontend docker containers retrieved from dockerhub. All of these EC2 resources are running inside a VPC and do not allow outside access except to the single ports exposed by the ELBs. In order to facilitate proper communication, there are some IAM resources created that are utilized by some of the services.
 
 ## Deploying a test instance
 

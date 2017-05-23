@@ -1,6 +1,6 @@
-# conjugates
+# Sentiment Analyzer
 
-A server that can analyze the Russell Conjugation of inputs
+A server that can analyze the sentiment of text inputs
 
 - Russell Conjugation: https://en.wikipedia.org/wiki/Emotive_conjugation
 - Repo: https://github.com/kevinlr5/conjugates
@@ -18,11 +18,11 @@ Additionally, this project is designed to use modern devops techniques including
 
 ## Developer Setup
 
-[Developing Conjugates](docs/development.md)
+[Developing the FE and BE](docs/development.md)
 
 ## Deployment
 
-[Deploying Conjugates to AWS](docs/deployment.md)
+[Deploying to AWS](docs/deployment.md)
 
 ## Domains and TLS
 
