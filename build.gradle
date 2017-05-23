@@ -29,7 +29,7 @@ configure(subprojects.findAll {it.name == 'analyzer' || it.name == 'frontend-ser
     apply plugin: 'checkstyle'
     apply plugin: 'com.bmuschko.docker-remote-api'
 
-    group = 'org.conjugates'
+    group = 'org.sentiment'
 
     ext {
         imageBuildDir = file("${project.buildDir}/image")

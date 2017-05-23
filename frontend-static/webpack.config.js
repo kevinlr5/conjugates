@@ -14,7 +14,7 @@ var plugins = [
   new HtmlWebpackPlugin({
     inject: false,
     template: require('html-webpack-template'),
-    title: 'Conjugates frontend',
+    title: 'Sentiment frontend',
     hash: true,
     appMountId: 'fixture'
   })

@@ -258,7 +258,7 @@ data "template_file" "user_data" {
   template = "${file("${path.module}/user_data.sh")}"
 
   vars {
-    ecs_cluster_name = "${aws_ecs_cluster.conjugates.name}"
+    ecs_cluster_name = "${aws_ecs_cluster.sentiment.name}"
   }
 }
 
@@ -267,7 +267,7 @@ resource "aws_launch_configuration" "app" {
     "${aws_security_group.instance_sg.id}",
   ]
 
-  name                        = "conjugates-${var.deploy_id}"
+  name                        = "sentiment-${var.deploy_id}"
   image_id                    = "${lookup(var.amis, var.region)}"
   instance_type               = "${var.instance_type}"
   iam_instance_profile        = "${aws_iam_instance_profile.app.name}"
@@ -412,7 +412,7 @@ resource "aws_ecs_task_definition" "frontend" {
 
 resource "aws_ecs_service" "analyzer" {
   name            = "analyzer-${var.deploy_id}"
-  cluster         = "${aws_ecs_cluster.conjugates.id}"
+  cluster         = "${aws_ecs_cluster.sentiment.id}"
   task_definition = "${aws_ecs_task_definition.analyzer.arn}"
   desired_count   = 1
   iam_role        = "${aws_iam_role.ecs_service.name}"
@@ -431,7 +431,7 @@ resource "aws_ecs_service" "analyzer" {
 
 resource "aws_ecs_service" "frontend" {
   name            = "frontend-${var.deploy_id}"
-  cluster         = "${aws_ecs_cluster.conjugates.id}"
+  cluster         = "${aws_ecs_cluster.sentiment.id}"
   task_definition = "${aws_ecs_task_definition.frontend.arn}"
   desired_count   = 1
   iam_role        = "${aws_iam_role.ecs_service.name}"
@@ -448,7 +448,7 @@ resource "aws_ecs_service" "frontend" {
   ]
 }
 
-resource "aws_ecs_cluster" "conjugates" {
+resource "aws_ecs_cluster" "sentiment" {
   name = "${var.ecs_cluster_name}-${var.deploy_id}"
 }
 

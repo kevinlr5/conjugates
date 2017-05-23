@@ -76,7 +76,7 @@ task testContainer() {
     dependsOn startContainer
     doLast {
         validateHttpEndpoint("http://localhost:${port}", containerName) { response ->
-            return response.contains('Conjugates')
+            return response.contains('Sentiment')
         }
     }
     finalizedBy removeContainer, removeImage

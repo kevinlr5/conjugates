@@ -52,7 +52,7 @@ def createRandomNumber() {
 }
 
 def createTerraformStateBucketName() {
-    return 'conjugates-terraform-state-' + createRandomNumber()
+    return 'sentiment-terraform-state-' + createRandomNumber()
 }
 
 def validateDeploymentUp(terraformBuildDir) {
@@ -93,7 +93,7 @@ def validateFrontendUp() {
     def home = 'https://' + frontendIp + ':443/'
     def p = ['curl', '-k', home].execute()
     def text = p.text
-    return !text.empty && text.contains('Conjugates')
+    return !text.empty && text.contains('Sentiment')
 }
 
 def deleteS3Object(key, secretKey, bucketName, keyName) {

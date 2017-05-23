@@ -22,7 +22,7 @@ variable "az_count" {
 
 variable "ecs_cluster_name" {
   description = "The name of the Amazon ECS cluster."
-  default = "conjugates"
+  default = "sentiment"
 }
 
 variable "docker_username" {

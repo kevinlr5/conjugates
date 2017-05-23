@@ -1,6 +1,6 @@
 # Versioning and Releases
 
-This document describes how conjugates is versioned and the process for releasing new versions.
+This document describes how the project is versioned and the process for releasing new versions.
 
 ## Branching and Releasing
 

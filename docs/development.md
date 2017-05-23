@@ -1,6 +1,6 @@
 # Development
 
-This document describes the tools necessary to do development on the conjugates project
+This document describes the tools necessary to do development on the sentiment analysis project
 
 ## Java
 
@@ -24,7 +24,7 @@ This document describes the tools necessary to do development on the conjugates 
 
 ## Builds
 
-Conjugates uses gradle as its build system. The gradle wrapper is committed to the repo. Additionally, the build configuration uses a multi-project build.
+The Sentiment Analyzer uses gradle as its build system. The gradle wrapper is committed to the repo. Additionally, the build configuration uses a multi-project build.
 
 - Unbreakable test build (deploys to AWS): `./gradlew clean check testDeploy`
 - Run analyzer server: `./gradlew clean :analyzer:bootRun`
