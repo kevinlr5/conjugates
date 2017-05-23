@@ -51,15 +51,11 @@ def createRandomNumber() {
     return 100000 + rnd.nextInt(900000)
 }
 
-def createTerraformStateBucketName() {
-    return 'sentiment-terraform-state-' + createRandomNumber()
-}
-
 def validateDeploymentUp(terraformBuildDir) {
     // Retry for 10 minutes
     retry(120, 5000) {
-        def frontendUp = validateFrontendUp()
-        def analyzerUp = validateAnalyzerUp()
+        def frontendUp = validateFrontendUp(terraformBuildDir)
+        def analyzerUp = validateAnalyzerUp(terraformBuildDir)
         if(frontendUp && analyzerUp) {
             println "Deployment up!"
         } else {
@@ -74,7 +70,7 @@ def validateDeploymentUp(terraformBuildDir) {
     }
 }
 
-def validateAnalyzerUp() {
+def validateAnalyzerUp(terraformBuildDir) {
     def analyzerIp = getAnalyzerDns(terraformBuildDir)
     def infoEndpoint = 'https://' + analyzerIp + ':8443/api/info/'
     def p = ['curl', '-k', infoEndpoint].execute()
@@ -88,7 +84,7 @@ def validateAnalyzerUp() {
     }
 }
 
-def validateFrontendUp() {
+def validateFrontendUp(terraformBuildDir) {
     def frontendIp = getFrontendDns(terraformBuildDir)
     def home = 'https://' + frontendIp + ':443/'
     def p = ['curl', '-k', home].execute()
@@ -99,16 +95,6 @@ def validateFrontendUp() {
 def deleteS3Object(key, secretKey, bucketName, keyName) {
     def s3client = createS3Client(key, secretKey)
     s3client.deleteObject(bucketName, keyName)
-}
-
-def getTfOutputVariable(terraformBuildDir, variable) {
-    def stdout = new ByteArrayOutputStream()
-    exec {
-        workingDir terraformBuildDir
-        commandLine 'terraform', 'output', variable
-        standardOutput = stdout
-    }
-    return stdout.toString().trim()
 }
 
 def getAnalyzerDns(terraformBuildDir) {
@@ -202,6 +188,24 @@ def promoteCore(
     }
 }
 
+ext.getVpcId = { terraformAccountBuildDir ->
+    return getTfOutputVariable(terraformAccountBuildDir, 'vpc_id')
+}
+
+ext.getTfOutputVariable = { terraformBuildDir, variable ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        workingDir terraformBuildDir
+        commandLine 'terraform', 'output', variable
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
+ext.createTerraformStateBucketName = {
+    return 'sentiment-terraform-state-' + createRandomNumber()
+}
+
 ext.createDeployId = { deployType ->
     return deployType + '-' + createRandomNumber()
 }
@@ -209,6 +213,11 @@ ext.createDeployId = { deployType ->
 ext.putS3Object = { key, secretKey, bucketName, keyName, content ->
     def s3client = createS3Client(key, secretKey)
     s3client.putObject(bucketName, keyName, content)
+}
+
+ext.doesS3ObjectExist = { key, secretKey, bucketName, keyName ->
+    def s3client = createS3Client(key, secretKey)
+    return s3client.doesObjectExist(bucketName, keyName)
 }
 
 ext.downloadS3Object = { key, secretKey, bucketName, keyName, outputFile ->
@@ -244,6 +253,31 @@ ext.runTerraform = { terraformWorkingDir, terraformArgs, terraformEnvironment ->
     }
 }
 
+ext.createAccount = {
+    awsAccessKeyRoot,
+    awsSecretKeyRoot,
+    bucketName,
+    s3Key,
+    terraformAccountBuildDir ->
+    def terraformAccountSetupEnvironment = [
+        'TF_VAR_aws_access_key_root': awsAccessKeyRoot,
+        'TF_VAR_aws_secret_key_root': awsSecretKeyRoot,
+        'TF_VAR_terraform_bucket_name': bucketName
+    ]
+    runTerraform(
+        terraformAccountBuildDir,
+        ['apply'],
+        terraformAccountSetupEnvironment
+    )
+    putS3Object(
+        awsAccessKeyRoot,
+        awsSecretKeyRoot,
+        bucketName,
+        s3Key,
+        file("${terraformAccountBuildDir}/terraform.tfstate")
+    )
+}
+
 ext.deploy = {
     awsAccessKeyDeployment,
     awsSecretKeyDeployment,
@@ -252,7 +286,8 @@ ext.deploy = {
     deployType,
     terraformStateBucketName,
     terraformBuildDir,
-    domain = 'none' ->
+    domain = 'none',
+    vpcId ->
     def terraformDeploymentEnvironment = [
         'TF_VAR_aws_access_key_deployment': awsAccessKeyDeployment,
         'TF_VAR_aws_secret_key_deployment': awsSecretKeyDeployment,
@@ -261,7 +296,8 @@ ext.deploy = {
         'TF_VAR_deploy_id': deployId,
         'TF_VAR_deploy_type': deployType,
         'TF_VAR_docker_username': dockerUsername,
-        'TF_VAR_api_address' : "api.${domain}"
+        'TF_VAR_api_address' : "api.${domain}",
+        'TF_VAR_vpc_id' : vpcId
     ]
     try {
         runTerraform(
@@ -288,7 +324,8 @@ ext.destroyDeploy = {
     deployId,
     deployType,
     terraformStateBucketName,
-    terraformBuildDir ->
+    terraformBuildDir,
+    vpcId ->
     def terraformDeploymentEnvironment = [
         'TF_VAR_aws_access_key_deployment': awsAccessKeyDeployment,
         'TF_VAR_aws_secret_key_deployment': awsSecretKeyDeployment,
@@ -296,7 +333,8 @@ ext.destroyDeploy = {
         'TF_VAR_version': project.version,
         'TF_VAR_deploy_id': deployId,
         'TF_VAR_deploy_type': deployType,
-        'TF_VAR_docker_username': dockerUsername
+        'TF_VAR_docker_username': dockerUsername,
+        'TF_VAR_vpc_id' : vpcId
     ]
     downloadS3Object(
         awsAccessKeyDeployment,

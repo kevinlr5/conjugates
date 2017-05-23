@@ -15,11 +15,6 @@ variable "region" {
   default = "us-west-2"
 }
 
-variable "az_count" {
-  description = "Number of AZs to cover in a given AWS region"
-  default     = "2"
-}
-
 variable "ecs_cluster_name" {
   description = "The name of the Amazon ECS cluster."
   default = "sentiment"
@@ -55,4 +50,8 @@ variable "instance_type" {
 variable "api_address" {
   description = "The api of the analyzer"
   default = "none"
+}
+
+variable "vpc_id" {
+  description = "The id of the pre-created vpc"
 }

@@ -14,3 +14,8 @@ variable "region" {
 variable "terraform_bucket_name" {
   description = "The bucket name with the terraform state."
 }
+
+variable "az_count" {
+  description = "Number of AZs to cover in a given AWS region"
+  default     = "2"
+}

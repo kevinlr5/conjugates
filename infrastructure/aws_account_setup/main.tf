@@ -1,8 +1,12 @@
+## Provider
+
 provider "aws" {
   access_key = "${var.aws_access_key_root}"
   secret_key = "${var.aws_secret_key_root}"
   region     = "${var.region}"
 }
+
+## IAM
 
 resource "aws_iam_user" "deployer" {
   name = "deployer"
@@ -153,6 +157,8 @@ resource "aws_iam_group_policy" "deployers" {
 EOF
 }
 
+## S3
+
 resource "aws_s3_bucket" "terraform_bucket" {
     bucket = "${var.terraform_bucket_name}"
 
@@ -177,6 +183,44 @@ resource "aws_s3_bucket" "terraform_bucket" {
 EOF
 }
 
+## Network
+
+data "aws_availability_zones" "available" {}
+
+resource "aws_vpc" "main" {
+  cidr_block = "10.10.0.0/16"
+}
+
+resource "aws_subnet" "main" {
+  count             = "${var.az_count}"
+  cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 8, count.index)}"
+  availability_zone = "${data.aws_availability_zones.available.names[count.index]}"
+  vpc_id            = "${aws_vpc.main.id}"
+}
+
+resource "aws_internet_gateway" "gw" {
+  vpc_id = "${aws_vpc.main.id}"
+}
+
+resource "aws_route_table" "r" {
+  vpc_id = "${aws_vpc.main.id}"
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = "${aws_internet_gateway.gw.id}"
+  }
+}
+
+resource "aws_route_table_association" "a" {
+  count          = "${var.az_count}"
+  subnet_id      = "${element(aws_subnet.main.*.id, count.index)}"
+  route_table_id = "${aws_route_table.r.id}"
+}
+
 output "terraform_bucket_name" {
     value = "${var.terraform_bucket_name}"
+}
+
+output "vpc_id" {
+  value = "${aws_vpc.main.id}"
 }

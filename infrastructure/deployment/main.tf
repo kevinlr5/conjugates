@@ -6,64 +6,6 @@ provider "aws" {
   region     = "${var.region}"
 }
 
-## Network
-
-data "aws_availability_zones" "available" {}
-
-resource "aws_vpc" "main" {
-  cidr_block = "10.10.0.0/16"
-
-  tags {
-    deploy_id   = "${var.deploy_id}"
-    deploy_type = "${var.deploy_type}"
-    version     = "${var.version}"
-  }
-}
-
-resource "aws_subnet" "main" {
-  count             = "${var.az_count}"
-  cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 8, count.index)}"
-  availability_zone = "${data.aws_availability_zones.available.names[count.index]}"
-  vpc_id            = "${aws_vpc.main.id}"
-
-  tags {
-    deploy_id   = "${var.deploy_id}"
-    deploy_type = "${var.deploy_type}"
-    version     = "${var.version}"
-  }
-}
-
-resource "aws_internet_gateway" "gw" {
-  vpc_id = "${aws_vpc.main.id}"
-
-  tags {
-    deploy_id   = "${var.deploy_id}"
-    deploy_type = "${var.deploy_type}"
-    version     = "${var.version}"
-  }
-}
-
-resource "aws_route_table" "r" {
-  vpc_id = "${aws_vpc.main.id}"
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = "${aws_internet_gateway.gw.id}"
-  }
-
-  tags {
-    deploy_id   = "${var.deploy_id}"
-    deploy_type = "${var.deploy_type}"
-    version     = "${var.version}"
-  }
-}
-
-resource "aws_route_table_association" "a" {
-  count          = "${var.az_count}"
-  subnet_id      = "${element(aws_subnet.main.*.id, count.index)}"
-  route_table_id = "${aws_route_table.r.id}"
-}
-
 ## IAM
 
 resource "aws_iam_role" "ecs_service" {
@@ -113,7 +55,7 @@ EOF
 
 resource "aws_iam_instance_profile" "app" {
   name  = "analyzer-ecs-instance-profile-${var.deploy_id}"
-  roles = ["${aws_iam_role.app_instance.name}"]
+  role = "${aws_iam_role.app_instance.name}"
 }
 
 resource "aws_iam_role" "app_instance" {
@@ -151,7 +93,7 @@ resource "aws_iam_role_policy" "instance" {
 resource "aws_security_group" "analyzer_elb_sg" {
   description = "controls access to the application ELB"
   name   = "ecs-elb-analyzer-sg-${var.deploy_id}"
-  vpc_id = "${aws_vpc.main.id}"
+  vpc_id = "${var.vpc_id}"
 
   ingress {
     protocol    = "tcp"
@@ -180,7 +122,7 @@ resource "aws_security_group" "analyzer_elb_sg" {
 resource "aws_security_group" "frontend_elb_sg" {
   description = "controls access to the application ELB"
   name   = "ecs-elb-frontend-sg-${var.deploy_id}"
-  vpc_id = "${aws_vpc.main.id}"
+  vpc_id = "${var.vpc_id}"
 
   ingress {
     protocol    = "tcp"
@@ -216,7 +158,7 @@ resource "aws_security_group" "frontend_elb_sg" {
 resource "aws_security_group" "instance_sg" {
   description = "controls direct access to application instances"
   name        = "ecs-instance-sg-${var.deploy_id}"
-  vpc_id      = "${aws_vpc.main.id}"
+  vpc_id      = "${var.vpc_id}"
 
   ingress {
     protocol  = "tcp"
@@ -252,7 +194,13 @@ resource "aws_security_group" "instance_sg" {
   }
 }
 
-## EC2
+## Network
+
+data "aws_subnet_ids" "main" {
+  vpc_id = "${var.vpc_id}"
+}
+
+# EC2
 
 data "template_file" "user_data" {
   template = "${file("${path.module}/user_data.sh")}"
@@ -281,7 +229,7 @@ resource "aws_launch_configuration" "app" {
 
 resource "aws_autoscaling_group" "analyzer_app" {
   name                 = "ecs-asg-${var.deploy_id}"
-  vpc_zone_identifier  = ["${aws_subnet.main.*.id}"]
+  vpc_zone_identifier  = ["${data.aws_subnet_ids.main.ids}"]
   min_size             = 1
   max_size             = 2
   desired_capacity     = 2
@@ -306,7 +254,7 @@ resource "aws_autoscaling_group" "analyzer_app" {
 
 resource "aws_elb" "analyzer-elb" {
   name               = "analyzer-elb-${var.deploy_id}"
-  subnets            = ["${aws_subnet.main.*.id}"]
+  subnets            = ["${data.aws_subnet_ids.main.ids}"]
   security_groups    = [
     "${aws_security_group.analyzer_elb_sg.id}",
   ]
@@ -338,7 +286,7 @@ resource "aws_elb" "analyzer-elb" {
 
 resource "aws_elb" "frontend-elb" {
   name               = "frontend-elb-${var.deploy_id}"
-  subnets            = ["${aws_subnet.main.*.id}"]
+  subnets            = ["${data.aws_subnet_ids.main.ids}"]
   security_groups    = [
     "${aws_security_group.frontend_elb_sg.id}",
   ]
@@ -392,7 +340,7 @@ data "template_file" "frontend_task_definition" {
     docker_username = "${var.docker_username}"
     version = "${var.version}"
     deploy_id = "${var.deploy_id}"
-    analyzer_api_url = "${var.deploy_type == "test" ? aws_elb.analyzer-elb.dns_name : var.api_address}"
+    analyzer_api_url = "${var.deploy_type == "test" ? format("%s", aws_elb.analyzer-elb.dns_name) : var.api_address}"
   }
 
   depends_on = [
