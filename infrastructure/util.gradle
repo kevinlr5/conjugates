@@ -166,7 +166,8 @@ def promoteCore(
     deployType,
     newDeployId,
     oldDeployId,
-    domain) {
+    domain,
+    vpcId) {
     promoteDns(key, secretKey, terraformBuildDir, domain)
     putS3Object(
         key,
@@ -183,7 +184,8 @@ def promoteCore(
             oldDeployId,
             deployType,
             terraformStateBucketName,
-            terraformBuildDir
+            terraformBuildDir,
+            vpcId
         )
     }
 }
@@ -363,7 +365,8 @@ ext.deployCore = {
     deployType,
     terraformStateBucketName,
     terraformBuildDir,
-    domain ->
+    domain,
+    vpcId ->
     def newDeployId = createDeployId(deployType)
     deploy(
         awsAccessKeyDeployment,
@@ -373,7 +376,8 @@ ext.deployCore = {
         deployType,
         terraformStateBucketName,
         terraformBuildDir,
-        domain
+        domain,
+        vpcId
     )
     def oldDeployId = getS3ObjectContents(
         awsAccessKeyDeployment,
@@ -390,5 +394,6 @@ ext.deployCore = {
         deployType,
         newDeployId,
         oldDeployId,
-        domain)
+        domain,
+        vpcId)
 }
