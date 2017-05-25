@@ -260,11 +260,15 @@ ext.createAccount = {
     awsSecretKeyRoot,
     bucketName,
     s3Key,
-    terraformAccountBuildDir ->
+    terraformAccountBuildDir,
+    dbUsername,
+    dbUserPassword ->
     def terraformAccountSetupEnvironment = [
         'TF_VAR_aws_access_key_root': awsAccessKeyRoot,
         'TF_VAR_aws_secret_key_root': awsSecretKeyRoot,
-        'TF_VAR_terraform_bucket_name': bucketName
+        'TF_VAR_terraform_bucket_name': bucketName,
+        'TF_VAR_db_user' : dbUsername,
+        'TF_VAR_db_user_password' : dbUserPassword
     ]
     runTerraform(
         terraformAccountBuildDir,
