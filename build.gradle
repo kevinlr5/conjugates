@@ -2,10 +2,15 @@ buildscript {
     repositories {
         mavenCentral()
         jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
         classpath("com.bmuschko:gradle-docker-plugin:${dockerPluginVersion}")
+        classpath("gradle.plugin.com.boxfuse.client:flyway-release:${flywayVersion}")
+        classpath("mysql:mysql-connector-java:${mysqlConnectorVersion}")
     }
 }
 

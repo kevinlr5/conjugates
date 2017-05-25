@@ -189,6 +189,7 @@ data "aws_availability_zones" "available" {}
 
 resource "aws_vpc" "main" {
   cidr_block = "10.10.0.0/16"
+  enable_dns_hostnames = true
 }
 
 resource "aws_subnet" "main" {
@@ -217,10 +218,60 @@ resource "aws_route_table_association" "a" {
   route_table_id = "${aws_route_table.r.id}"
 }
 
+## RDS
+
+resource "aws_security_group" "main" {
+  name        = "main_rds_sg"
+  description = "Allow all inbound traffic"
+  vpc_id      = "${aws_vpc.main.id}"
+
+  ingress {
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "TCP"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_db_subnet_group" "main" {
+  name        = "main_subnet_group"
+  description = "Our main group of subnets"
+  subnet_ids  = ["${aws_subnet.main.*.id}"]
+}
+
+resource "aws_db_instance" "main" {
+  depends_on             = ["aws_security_group.main"]
+  identifier             = "main-rds"
+  allocated_storage      = "10"
+  engine                 = "mysql"
+  engine_version         = "5.7.16"
+  instance_class         = "db.t2.micro"
+  publicly_accessible    = true
+  name                   = "main"
+  username               = "${var.db_user}"
+  password               = "${var.db_user_password}"
+  vpc_security_group_ids = ["${aws_security_group.main.id}"]
+  db_subnet_group_name   = "${aws_db_subnet_group.main.id}"
+  final_snapshot_identifier = "analyzer-final"
+}
+
+## Output
+
 output "terraform_bucket_name" {
     value = "${var.terraform_bucket_name}"
 }
 
 output "vpc_id" {
   value = "${aws_vpc.main.id}"
+}
+
+output "db_instance_address" {
+  value = "${aws_db_instance.main.address}"
 }

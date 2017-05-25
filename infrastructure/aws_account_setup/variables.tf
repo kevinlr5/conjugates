@@ -19,3 +19,11 @@ variable "az_count" {
   description = "Number of AZs to cover in a given AWS region"
   default     = "2"
 }
+
+variable "db_user" {
+  description = "User for the db"
+}
+
+variable "db_user_password" {
+  description = "Password for the db user"
+}

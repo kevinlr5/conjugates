@@ -1,5 +1,7 @@
 apply from: 'util.gradle'
 
+apply plugin: 'org.flywaydb.flyway'
+
 ext {
     terraformStateBucketName = System.getenv("TERRAFORM_STATE_BUCKET_NAME")
     awsAccessKeyRoot = System.getenv("AWS_ACCESS_KEY_ROOT")
@@ -8,8 +10,19 @@ ext {
     awsSecretKeyDeployment = System.getenv("AWS_SECRET_KEY_DEPLOYMENT")
     awsCertArn = System.getenv("AWS_CERT_ARN")
     domain = System.getenv("DOMAIN")
+    dbUserPassword = System.getenv("DB_USER_PASSWORD")
+    dbHostname = System.getenv("DB_HOSTNAME")
+    dbUsername = 'maindbuser'
     terraformAccountBuildDir = "${project.buildDir}/terraform/account"
     terraformDeploymentBuildDir = "${project.buildDir}/terraform/deployment"
+}
+
+flyway {
+    user = dbUsername
+    url = "jdbc:mysql://${dbHostname}:3306"
+    password = dbUserPassword
+    locations = ["filesystem:${projectDir}/main_schema"]
+    schemas = ['analyzer']
 }
 
 task clean(type: Delete) {
@@ -48,7 +61,9 @@ task createAwsAccount() {
                 awsSecretKeyRoot,
                 terraformStateBucketName,
                 s3Key,
-                terraformAccountBuildDir
+                terraformAccountBuildDir,
+                dbUsername,
+                dbUserPassword
             )
         } else { 
             def newBucketName = createTerraformStateBucketName()
@@ -57,7 +72,9 @@ task createAwsAccount() {
                 awsSecretKeyRoot,
                 newBucketName,
                 s3Key,
-                terraformAccountBuildDir
+                terraformAccountBuildDir,
+                dbUsername,
+                dbUserPassword
             )
         }
     }
@@ -69,7 +86,9 @@ task destroyAwsAccount() {
         def terraformAccountSetupEnvironment = [
             'TF_VAR_aws_access_key_root': awsAccessKeyRoot,
             'TF_VAR_aws_secret_key_root': awsSecretKeyRoot,
-            'TF_VAR_terraform_bucket_name': terraformStateBucketName
+            'TF_VAR_terraform_bucket_name': terraformStateBucketName,
+            'TF_VAR_db_user' : dbUsername,
+            'TF_VAR_db_user_password' : dbUserPassword
         ]
         downloadS3Object(
             awsAccessKeyRoot,
