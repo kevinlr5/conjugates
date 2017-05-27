@@ -55,3 +55,19 @@ variable "api_address" {
 variable "vpc_id" {
   description = "The id of the pre-created vpc"
 }
+
+variable "db_hostname" {
+  description = "The hostname of the db"
+}
+
+variable "db_user" {
+  description = "The username for the db"
+}
+
+variable "db_password" {
+  description = "The password for the db"
+}
+
+variable "db_schema" {
+  description = "The schema in the db"
+}
