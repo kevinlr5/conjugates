@@ -21,6 +21,12 @@ project.version = gitDescribe()
 ext {
     gitCommit = gitCommitHash()
     dockerUsername = System.getenv("DOCKER_USERNAME")
+    dbUserPassword = System.getenv("DB_USER_PASSWORD")
+    dbHostname = System.getenv("DB_HOSTNAME")
+    dbUsername = 'maindbuser'
+    deployType = project.hasProperty('deployType') ? project.getProperty('deployType') : 'test'
+    deployId = project.hasProperty('deployId') ? project.getProperty('deployId') : createDeployId(deployType)
+    schemaName = deployType == 'test' ? "analyzer-${deployId}" : "analyzer-${deployType}"
 }
 
 subprojects {
@@ -50,6 +56,15 @@ configure(subprojects.findAll {it.name == 'analyzer' || it.name == 'frontend-ser
     repositories {
         mavenCentral()
     }
+}
+
+def createRandomNumber() {
+    def rnd = new Random()
+    return 100000 + rnd.nextInt(900000)
+}
+
+def createDeployId(deployType) {
+    return deployType + '-' + createRandomNumber()
 }
 
 def retry(times, sleepTimeMillis, body) {

@@ -14,9 +14,9 @@ import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
 import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerInspectContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerStopContainer
-import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
 import groovy.json.JsonSlurper
 
 apply plugin: 'org.asciidoctor.convert'
@@ -33,6 +33,8 @@ dependencies {
     compile("edu.stanford.nlp:stanford-corenlp:${stanfordNlpVersion}")
     compile("edu.stanford.nlp:stanford-corenlp:${stanfordNlpVersion}:models@jar")
     compile("com.google.guava:guava:${guavaVersion}")
+    compile("com.zaxxer:HikariCP:${hikariVersion}")
+    compile("mysql:mysql-connector-java:${mysqlConnectorVersion}")
 
     testCompile('org.springframework.boot:spring-boot-starter-test')
     testCompile('org.springframework.restdocs:spring-restdocs-mockmvc')
@@ -71,9 +73,10 @@ task pushImage(type: DockerPushImage) {
 }
 
 task createContainer(type: DockerCreateContainer) {
-    dependsOn pushImage
+    dependsOn pushImage, ":infrastructure:flywayMigrateTest"
     targetImageId { buildImage.getImageId() }
     portBindings = ["${port}:${port}"]
+    env = ["DB_HOSTNAME=${dbHostname}", "DB_USER=${dbUsername}", "DB_PASSWORD=${dbUserPassword}", "DB_SCHEMA=${schemaName}"]
 }
 
 task startContainer(type: DockerStartContainer) {
@@ -103,10 +106,13 @@ task testContainer() {
 }
 
 test {
-    dependsOn(":infrastructure:flywayMigrateTest")
+    dependsOn ":infrastructure:flywayMigrateTest"
     outputs.dir snippetsDir
     maxHeapSize = "1024m" // CIRCLE CI nodes have limited memory
-    finalizedBy(":infrastructure:flywayCleanTest")
+    environment 'DB_HOSTNAME', dbHostname
+    environment 'DB_USER', dbUsername
+    environment 'DB_PASSWORD', dbUserPassword
+    environment 'DB_SCHEMA', schemaName
 }
 
 asciidoctor {
@@ -116,5 +122,6 @@ asciidoctor {
 }
 
 tasks.check.dependsOn testContainer, asciidoctor
+tasks.check.finalizedBy ":infrastructure:flywayCleanTest"
 // CIRCLE CI cannot remove docker images/containers
 [tasks.removeContainer, tasks.removeImage].each { t -> t.enabled = !System.getenv("CIRCLECI") }
