@@ -46,11 +46,6 @@ def createRoute53Client(key, secretKey) {
     return new AmazonRoute53Client(creds);
 }
 
-def createRandomNumber() {
-    def rnd = new Random()
-    return 100000 + rnd.nextInt(900000)
-}
-
 def validateDeploymentUp(terraformBuildDir) {
     // Retry for 10 minutes
     retry(120, 5000) {
@@ -214,10 +209,6 @@ def promoteCore(
 
 ext.createTerraformStateBucketName = {
     return 'sentiment-terraform-state-' + createRandomNumber()
-}
-
-ext.createDeployId = { deployType ->
-    return deployType + '-' + createRandomNumber()
 }
 
 ext.putS3Object = { key, secretKey, bucketName, keyName, content ->

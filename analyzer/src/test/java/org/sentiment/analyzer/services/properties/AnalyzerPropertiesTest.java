@@ -3,7 +3,6 @@ package org.sentiment.analyzer.services.properties;
 import org.junit.Assert;
 import org.junit.Test;
 import org.sentiment.analyzer.framework.AnalyzerIntegrationBaseTest;
-import org.sentiment.analyzer.services.properties.AnalyzerProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class AnalyzerPropertiesTest extends AnalyzerIntegrationBaseTest {

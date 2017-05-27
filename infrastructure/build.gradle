@@ -1,6 +1,21 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+}
+
 apply from: 'util.gradle'
 
 apply plugin: 'org.flywaydb.flyway'
+apply plugin: 'com.bmuschko.docker-remote-api'
+
+import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerStopContainer
+import com.bmuschko.gradle.docker.tasks.image.DockerPullImage;
+
 
 import org.flywaydb.gradle.task.FlywayCleanTask;
 import org.flywaydb.gradle.task.FlywayMigrateTask;
@@ -14,14 +29,10 @@ ext {
     awsSecretKeyDeployment = System.getenv("AWS_SECRET_KEY_DEPLOYMENT")
     awsCertArn = System.getenv("AWS_CERT_ARN")
     domain = System.getenv("DOMAIN")
-    dbUserPassword = System.getenv("DB_USER_PASSWORD")
-    dbHostname = System.getenv("DB_HOSTNAME")
-    dbUsername = 'maindbuser'
     terraformAccountBuildDir = "${project.buildDir}/terraform/account"
     terraformDeploymentBuildDir = "${project.buildDir}/terraform/deployment"
-    deployType = project.hasProperty('deployType') ? project.getProperty('deployType') : 'test'
-    deployId = project.hasProperty('deployId') ? project.getProperty('deployId') : createDeployId(deployType)
-    schemaName = deployType == 'test' ? "analyzer-${deployId}" : "analyzer-${deployType}"
+    localMysqlContainerName = 'localmysql'
+    localMysqlPassword = 'defaultpwd'
 }
 
 flyway {
@@ -30,6 +41,16 @@ flyway {
     password = dbUserPassword
     locations = ["filesystem:${projectDir}/main_schema"]
     schemas = [schemaName]
+}
+
+def createFlywayExtensionLocal() {
+    def extension = new org.flywaydb.gradle.FlywayExtension()
+    extension.user = 'root'
+    extension.url = "jdbc:mysql://localhost:3306"
+    extension.password = localMysqlPassword
+    extension.locations = ["filesystem:${projectDir}/main_schema"]
+    extension.schemas = ['analyzer']
+    return extension
 }
 
 def downloadAccountState() {
@@ -227,4 +248,48 @@ task deployCore() {
             schemaName
         )
     }
+}
+
+task flywayMigrateLocal(type: org.flywaydb.gradle.task.FlywayMigrateTask) {
+    extension = createFlywayExtensionLocal()
+}
+
+task flywayCleanLocal(type: org.flywaydb.gradle.task.FlywayCleanTask) {
+    extension = createFlywayExtensionLocal()
+}
+
+task pullMysqlImage(type: DockerPullImage) {
+    repository = 'mysql'
+    tag = '5.7.16'
+}
+
+task buildMysqlContainer(type: DockerCreateContainer) {
+    dependsOn pullMysqlImage
+    targetImageId { 'mysql:5.7.16' }
+    portBindings = ['3306:3306']
+    env = ["MYSQL_ROOT_PASSWORD=${localMysqlPassword}"]
+    containerName = localMysqlContainerName
+}
+
+task startMysqlContainer(type: DockerStartContainer) {
+    dependsOn buildMysqlContainer
+    targetContainerId { buildMysqlContainer.getContainerId() }
+}
+
+task startLocalDb() {
+    dependsOn 'startMysqlContainer'
+    finalizedBy 'flywayMigrateLocal'
+    doLast {
+        println 'wait for container to start'
+        sleep(20000)
+    }
+}
+
+task stopMysqlContainer(type: DockerStopContainer) {
+    targetContainerId { localMysqlContainerName }
+}
+
+task destroyLocalDb(type: DockerRemoveContainer) {
+    dependsOn stopMysqlContainer
+    targetContainerId { localMysqlContainerName }
 }

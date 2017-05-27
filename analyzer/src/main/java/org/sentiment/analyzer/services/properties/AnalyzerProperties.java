@@ -10,4 +10,12 @@ public interface AnalyzerProperties {
 
   int getPort();
 
+  String getDbHostname();
+
+  String getDbUser();
+
+  String getDbPassword();
+
+  String getDbSchema();
+
 }
