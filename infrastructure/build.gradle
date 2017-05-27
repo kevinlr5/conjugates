@@ -33,6 +33,17 @@ def createFlywayExtension() {
     extension.schemas = [schemaName]
     return extension
 }
+
+def downloadAccountState() {
+    downloadS3Object(
+        awsAccessKeyDeployment,
+        awsSecretKeyDeployment,
+        terraformStateBucketName,
+        'account/terraform.tfstate',
+        file("${terraformAccountBuildDir}/terraform.tfstate")
+    )
+}
+
 task clean(type: Delete) {
     delete 'build'
 }
@@ -55,6 +66,12 @@ task copyDeploymentFiles(type: Copy) {
     into(terraformDeploymentBuildDir)
 }
 
+task downloadAccountState() {
+    doLast {
+        downloadAccountState()
+    }
+}
+
 task createAwsAccount() {
     dependsOn 'copyAwsAccountFiles'
     doLast {
@@ -65,13 +82,7 @@ task createAwsAccount() {
             terraformStateBucketName,
             s3Key
         )) {
-            downloadS3Object(
-                awsAccessKeyRoot,
-                awsSecretKeyRoot,
-                terraformStateBucketName,
-                'account/terraform.tfstate',
-                file("${terraformAccountBuildDir}/terraform.tfstate")
-            )
+            downloadAccountState()
             createAccount(
                 awsAccessKeyRoot,
                 awsSecretKeyRoot,
@@ -97,7 +108,7 @@ task createAwsAccount() {
 }
 
 task destroyAwsAccount() {
-    dependsOn 'copyAwsAccountFiles'
+    dependsOn 'downloadAccountState', 'copyAwsAccountFiles'
     doLast {
         def terraformAccountSetupEnvironment = [
             'TF_VAR_aws_access_key_root': awsAccessKeyRoot,
@@ -106,13 +117,6 @@ task destroyAwsAccount() {
             'TF_VAR_db_user' : dbUsername,
             'TF_VAR_db_user_password' : dbUserPassword
         ]
-        downloadS3Object(
-            awsAccessKeyRoot,
-            awsSecretKeyRoot,
-            terraformStateBucketName,
-            'account/terraform.tfstate',
-            file("${terraformAccountBuildDir}/terraform.tfstate")
-        )
         emptyS3Bucket(
             awsAccessKeyRoot,
             awsSecretKeyRoot,
@@ -135,15 +139,8 @@ task flywayCleanTestDeploy(type: org.flywaydb.gradle.task.FlywayCleanTask) {
 }
 
 task deployTest() {
-    dependsOn 'copyAwsAccountFiles', 'copyDeploymentFiles', 'flywayMigrateTestDeploy'
+    dependsOn 'downloadAccountState', 'copyAwsAccountFiles', 'copyDeploymentFiles', 'flywayMigrateTestDeploy'
     doLast {
-        downloadS3Object(
-            awsAccessKeyDeployment,
-            awsSecretKeyDeployment,
-            terraformStateBucketName,
-            'account/terraform.tfstate',
-            file("${terraformAccountBuildDir}/terraform.tfstate")
-        )
         deploy(
             awsAccessKeyDeployment,
             awsSecretKeyDeployment,
@@ -152,21 +149,14 @@ task deployTest() {
             deployType,
             terraformStateBucketName,
             terraformDeploymentBuildDir,
-            getVpcId(terraformAccountBuildDir)
+            terraformAccountBuildDir
         )
     }
 }
 
 task destroyDeploy() {
-    dependsOn 'copyAwsAccountFiles', 'copyDeploymentFiles', 'flywayCleanTestDeploy'
+    dependsOn 'downloadAccountState', 'copyAwsAccountFiles', 'copyDeploymentFiles', 'flywayCleanTestDeploy'
     doLast {
-        downloadS3Object(
-            awsAccessKeyDeployment,
-            awsSecretKeyDeployment,
-            terraformStateBucketName,
-            'account/terraform.tfstate',
-            file("${terraformAccountBuildDir}/terraform.tfstate")
-        )
         def deployType = 'not_used'
         destroyDeploy(
             awsAccessKeyDeployment,
@@ -176,22 +166,15 @@ task destroyDeploy() {
             deployType,
             terraformStateBucketName,
             terraformDeploymentBuildDir,
-            getVpcId(terraformAccountBuildDir)
+            terraformAccountBuildDir
         )
     }
 }
 
 task testDeploy() {
-    dependsOn 'copyAwsAccountFiles', 'copyDeploymentFiles', 'flywayMigrateTestDeploy'
+    dependsOn 'downloadAccountState', 'copyAwsAccountFiles', 'copyDeploymentFiles', 'flywayMigrateTestDeploy'
     finalizedBy 'flywayCleanTestDeploy'
     doLast {
-        downloadS3Object(
-            awsAccessKeyDeployment,
-            awsSecretKeyDeployment,
-            terraformStateBucketName,
-            'account/terraform.tfstate',
-            file("${terraformAccountBuildDir}/terraform.tfstate")
-        )
         try {
             deploy(
                 awsAccessKeyDeployment,
@@ -201,7 +184,7 @@ task testDeploy() {
                 deployType,
                 terraformStateBucketName,
                 terraformDeploymentBuildDir,
-                getVpcId(terraformAccountBuildDir)
+                terraformAccountBuildDir
             )
         } finally {
             destroyDeploy(
@@ -212,7 +195,7 @@ task testDeploy() {
                 deployType,
                 terraformStateBucketName,
                 terraformDeploymentBuildDir,
-                getVpcId(terraformAccountBuildDir)
+                terraformAccountBuildDir
             )
         }
     }
@@ -223,15 +206,8 @@ task flywayMigrateCore(type: org.flywaydb.gradle.task.FlywayMigrateTask) {
 }
 
 task deployCore() {
-    dependsOn 'copyAwsAccountFiles', 'copyDeploymentFiles', 'flywayMigrateCore'
+    dependsOn 'downloadAccountState', 'copyAwsAccountFiles', 'copyDeploymentFiles', 'flywayMigrateCore'
     doLast {
-        downloadS3Object(
-            awsAccessKeyDeployment,
-            awsSecretKeyDeployment,
-            terraformStateBucketName,
-            'account/terraform.tfstate',
-            file("${terraformAccountBuildDir}/terraform.tfstate")
-        )
         deployCore(
             awsAccessKeyDeployment,
             awsSecretKeyDeployment,
@@ -239,8 +215,8 @@ task deployCore() {
             deployType,
             terraformStateBucketName,
             terraformDeploymentBuildDir,
-            domain,
-            getVpcId(terraformAccountBuildDir)
+            terraformAccountBuildDir,
+            domain
         )
     }
 }

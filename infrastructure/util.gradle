@@ -97,6 +97,16 @@ def deleteS3Object(key, secretKey, bucketName, keyName) {
     s3client.deleteObject(bucketName, keyName)
 }
 
+def getTfOutputVariable(terraformBuildDir, variable) {
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        workingDir terraformBuildDir
+        commandLine 'terraform', 'output', variable
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
 def getAnalyzerDns(terraformBuildDir) {
     return getTfOutputVariable(terraformBuildDir, 'analyzer_dns_name')
 }
@@ -111,6 +121,10 @@ def getAnalyzerHostedZone(terraformBuildDir) {
 
 def getFrontendHostedZone(terraformBuildDir) {
     return getTfOutputVariable(terraformBuildDir, 'frontend_hosted_zone')
+}
+
+def getVpcId(terraformAccountBuildDir) {
+    return getTfOutputVariable(terraformAccountBuildDir, 'vpc_id')
 }
 
 def getS3ObjectContents(key, secretKey, bucketName, keyName) {
@@ -163,11 +177,11 @@ def promoteCore(
     certArn,
     terraformStateBucketName,
     terraformBuildDir,
+    terraformAccountBuildDir,
     deployType,
     newDeployId,
     oldDeployId,
-    domain,
-    vpcId) {
+    domain) {
     promoteDns(key, secretKey, terraformBuildDir, domain)
     putS3Object(
         key,
@@ -185,23 +199,9 @@ def promoteCore(
             deployType,
             terraformStateBucketName,
             terraformBuildDir,
-            vpcId
+            terraformAccountBuildDir
         )
     }
-}
-
-ext.getVpcId = { terraformAccountBuildDir ->
-    return getTfOutputVariable(terraformAccountBuildDir, 'vpc_id')
-}
-
-ext.getTfOutputVariable = { terraformBuildDir, variable ->
-    def stdout = new ByteArrayOutputStream()
-    exec {
-        workingDir terraformBuildDir
-        commandLine 'terraform', 'output', variable
-        standardOutput = stdout
-    }
-    return stdout.toString().trim()
 }
 
 ext.createTerraformStateBucketName = {
@@ -292,8 +292,8 @@ ext.deploy = {
     deployType,
     terraformStateBucketName,
     terraformBuildDir,
-    domain = 'none',
-    vpcId ->
+    terraformAccountBuildDir,
+    domain = 'none' ->
     def terraformDeploymentEnvironment = [
         'TF_VAR_aws_access_key_deployment': awsAccessKeyDeployment,
         'TF_VAR_aws_secret_key_deployment': awsSecretKeyDeployment,
@@ -303,7 +303,7 @@ ext.deploy = {
         'TF_VAR_deploy_type': deployType,
         'TF_VAR_docker_username': dockerUsername,
         'TF_VAR_api_address' : "api.${domain}",
-        'TF_VAR_vpc_id' : vpcId
+        'TF_VAR_vpc_id' : getVpcId(terraformAccountBuildDir)
     ]
     try {
         runTerraform(
@@ -331,7 +331,7 @@ ext.destroyDeploy = {
     deployType,
     terraformStateBucketName,
     terraformBuildDir,
-    vpcId ->
+    terraformAccountBuildDir ->
     def terraformDeploymentEnvironment = [
         'TF_VAR_aws_access_key_deployment': awsAccessKeyDeployment,
         'TF_VAR_aws_secret_key_deployment': awsSecretKeyDeployment,
@@ -340,7 +340,7 @@ ext.destroyDeploy = {
         'TF_VAR_deploy_id': deployId,
         'TF_VAR_deploy_type': deployType,
         'TF_VAR_docker_username': dockerUsername,
-        'TF_VAR_vpc_id' : vpcId
+        'TF_VAR_vpc_id' : getVpcId(terraformAccountBuildDir)
     ]
     downloadS3Object(
         awsAccessKeyDeployment,
@@ -369,8 +369,8 @@ ext.deployCore = {
     deployType,
     terraformStateBucketName,
     terraformBuildDir,
-    domain,
-    vpcId ->
+    terraformAccountBuildDir,
+    domain ->
     def newDeployId = createDeployId(deployType)
     deploy(
         awsAccessKeyDeployment,
@@ -380,8 +380,8 @@ ext.deployCore = {
         deployType,
         terraformStateBucketName,
         terraformBuildDir,
-        domain,
-        vpcId
+        terraformAccountBuildDir,
+        domain
     )
     def oldDeployId = getS3ObjectContents(
         awsAccessKeyDeployment,
@@ -395,9 +395,9 @@ ext.deployCore = {
         awsCertArn,
         terraformStateBucketName,
         terraformBuildDir,
+        terraformAccountBuildDir,
         deployType,
         newDeployId,
         oldDeployId,
-        domain,
-        vpcId)
+        domain)
 }
