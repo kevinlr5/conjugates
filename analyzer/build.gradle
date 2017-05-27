@@ -103,10 +103,10 @@ task testContainer() {
 }
 
 test {
-    dependsOn(":infrastructure:flywayMigrate")
+    dependsOn(":infrastructure:flywayMigrateTest")
     outputs.dir snippetsDir
     maxHeapSize = "1024m" // CIRCLE CI nodes have limited memory
-    finalizedBy(":infrastructure:flywayClean")
+    finalizedBy(":infrastructure:flywayCleanTest")
 }
 
 asciidoctor {
