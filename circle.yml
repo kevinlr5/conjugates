@@ -19,4 +19,4 @@ deployment:
   develop:
     branch: develop
     commands:
-      - ./gradlew clean deployDevelop
+      - ./gradlew clean deployCore -PdeployType=develop

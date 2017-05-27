@@ -44,15 +44,16 @@ The Sentiment Analyzer is a straightforward containerized application that is de
 2. Export the value of `terraform_bucket_name` as `TERRAFORM_STATE_BUCKET_NAME`
 3. Export the keys for the `deployer` account as `AWS_ACCESS_KEY_DEPLOYMENT` and `AWS_SECRET_KEY_DEPLOYMENT`.
 4. Export the ARN of your cert as `AWS_CERT_ARN`
-5. `./gradlew clean build deployTest`
-6. The previous command will complete when it verifies that the deployment is working. It writes its state to the S3 bucket.
-7. To destroy the test deployment, take the deployId from the log and run `./gradlew clean destroyDeployTest -PdeployId=theId`
+5. Export the DB info as `DB_HOSTNAME` and `DB_USER_PASSWORD`
+6. `./gradlew clean build deployTest`
+7. The previous command will complete when it verifies that the deployment is working. It writes its state to the S3 bucket.
+8. To destroy the test deployment, take the deployId from the log and run `./gradlew clean destroyDeployTest -PdeployId=theId`
 
 ## Configuring a CI/CD server (CircleCi)
 
 1. Hook up CircleCi to your github repo
 2. Create a trusty Ubuntu build for the repo and disable builds for non-PRs
-3. In the build settings, export the `AWS_ACCESS_KEY_DEPLOYMENT`, `AWS_SECRET_KEY_DEPLOYMENT`, `AWS_CERT_ARN`, `DOCKER_USERNAME`, `DOCKER_PASSWORD`, `DOMAIN`, and `TERRAFORM_STATE_BUCKET_NAME` environment variables
+3. In the build settings, export the `AWS_ACCESS_KEY_DEPLOYMENT`, `AWS_SECRET_KEY_DEPLOYMENT`, `AWS_CERT_ARN`, `DB_HOSTNAME`, `DB_USER_PASSWORD`, `DOCKER_USERNAME`, `DOCKER_PASSWORD`, `DOMAIN`, and `TERRAFORM_STATE_BUCKET_NAME` environment variables
 
 - A full deploy to AWS will occur on each PR build
 - The persistent `develop` instance will be upgraded after each merge to develop
