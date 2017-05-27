@@ -24,14 +24,12 @@ ext {
     schemaName = deployType == 'test' ? "analyzer-${deployId}" : "analyzer-${deployType}"
 }
 
-def createFlywayExtension() {
-    def extension = new org.flywaydb.gradle.FlywayExtension()
-    extension.user = dbUsername
-    extension.url = "jdbc:mysql://${dbHostname}:3306"
-    extension.password = dbUserPassword
-    extension.locations = ["filesystem:${projectDir}/main_schema"]
-    extension.schemas = [schemaName]
-    return extension
+flyway {
+    user = dbUsername
+    url = "jdbc:mysql://${dbHostname}:3306"
+    password = dbUserPassword
+    locations = ["filesystem:${projectDir}/main_schema"]
+    schemas = [schemaName]
 }
 
 def downloadAccountState() {
@@ -48,13 +46,9 @@ task clean(type: Delete) {
     delete 'build'
 }
 
-task flywayMigrateTest(type: org.flywaydb.gradle.task.FlywayMigrateTask) {
-    extension = createFlywayExtension()
-}
+task flywayMigrateTest(type: org.flywaydb.gradle.task.FlywayMigrateTask)
 
-task flywayCleanTest(type: org.flywaydb.gradle.task.FlywayCleanTask) {
-    extension = createFlywayExtension()
-}
+task flywayCleanTest(type: org.flywaydb.gradle.task.FlywayCleanTask)
 
 task copyAwsAccountFiles(type: Copy) {
     from("${projectDir}/aws_account_setup")
@@ -130,13 +124,9 @@ task destroyAwsAccount() {
     }
 }
 
-task flywayMigrateTestDeploy(type: org.flywaydb.gradle.task.FlywayMigrateTask) {
-    extension = createFlywayExtension()
-}
+task flywayMigrateTestDeploy(type: org.flywaydb.gradle.task.FlywayMigrateTask)
 
-task flywayCleanTestDeploy(type: org.flywaydb.gradle.task.FlywayCleanTask) {
-    extension = createFlywayExtension()
-}
+task flywayCleanTestDeploy(type: org.flywaydb.gradle.task.FlywayCleanTask)
 
 task deployTest() {
     dependsOn 'downloadAccountState', 'copyAwsAccountFiles', 'copyDeploymentFiles', 'flywayMigrateTestDeploy'
@@ -149,7 +139,11 @@ task deployTest() {
             deployType,
             terraformStateBucketName,
             terraformDeploymentBuildDir,
-            terraformAccountBuildDir
+            terraformAccountBuildDir,
+            dbHostname,
+            dbUsername,
+            dbUserPassword,
+            schemaName
         )
     }
 }
@@ -166,7 +160,11 @@ task destroyDeploy() {
             deployType,
             terraformStateBucketName,
             terraformDeploymentBuildDir,
-            terraformAccountBuildDir
+            terraformAccountBuildDir,
+            dbHostname,
+            dbUsername,
+            dbUserPassword,
+            schemaName
         )
     }
 }
@@ -184,7 +182,11 @@ task testDeploy() {
                 deployType,
                 terraformStateBucketName,
                 terraformDeploymentBuildDir,
-                terraformAccountBuildDir
+                terraformAccountBuildDir,
+                dbHostname,
+                dbUsername,
+                dbUserPassword,
+                schemaName
             )
         } finally {
             destroyDeploy(
@@ -195,15 +197,17 @@ task testDeploy() {
                 deployType,
                 terraformStateBucketName,
                 terraformDeploymentBuildDir,
-                terraformAccountBuildDir
+                terraformAccountBuildDir,
+                dbHostname,
+                dbUsername,
+                dbUserPassword,
+                schemaName
             )
         }
     }
 }
 
-task flywayMigrateCore(type: org.flywaydb.gradle.task.FlywayMigrateTask) {
-    extension = createFlywayExtension()
-}
+task flywayMigrateCore(type: org.flywaydb.gradle.task.FlywayMigrateTask)
 
 task deployCore() {
     dependsOn 'downloadAccountState', 'copyAwsAccountFiles', 'copyDeploymentFiles', 'flywayMigrateCore'
@@ -216,7 +220,11 @@ task deployCore() {
             terraformStateBucketName,
             terraformDeploymentBuildDir,
             terraformAccountBuildDir,
-            domain
+            domain,
+            dbHostname,
+            dbUsername,
+            dbUserPassword,
+            schemaName
         )
     }
 }

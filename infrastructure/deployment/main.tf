@@ -330,6 +330,10 @@ data "template_file" "analyzer_task_definition" {
     docker_username = "${var.docker_username}"
     version = "${var.version}"
     deploy_id = "${var.deploy_id}"
+    db_hostname = "${var.db_hostname}"
+    db_user = "${var.db_user}"
+    db_password = "${var.db_password}"
+    db_schema = "${var.db_schema}"
   }
 }
 

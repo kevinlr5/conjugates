@@ -15,7 +15,12 @@
         "links": [],
         "command": [],
         "entryPoint": [],
-        "environment": [],
+        "environment" : [
+            { "name" : "DB_HOSTNAME", "value" : "${db_hostname}" },
+            { "name" : "DB_USER", "value" : "${db_user}" },
+            { "name" : "DB_PASSWORD", "value" : "${db_password}" },
+            { "name" : "DB_SCHEMA", "value" : "${db_schema}" }
+        ],
         "mountPoints": []
     }
 ]

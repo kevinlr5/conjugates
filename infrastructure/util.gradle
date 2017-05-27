@@ -181,7 +181,11 @@ def promoteCore(
     deployType,
     newDeployId,
     oldDeployId,
-    domain) {
+    domain,
+    dbHostname,
+    dbUsername,
+    dbUserPassword,
+    schemaName) {
     promoteDns(key, secretKey, terraformBuildDir, domain)
     putS3Object(
         key,
@@ -199,7 +203,11 @@ def promoteCore(
             deployType,
             terraformStateBucketName,
             terraformBuildDir,
-            terraformAccountBuildDir
+            terraformAccountBuildDir,
+            dbHostname,
+            dbUsername,
+            dbUserPassword,
+            schemaName
         )
     }
 }
@@ -293,7 +301,11 @@ ext.deploy = {
     terraformStateBucketName,
     terraformBuildDir,
     terraformAccountBuildDir,
-    domain = 'none' ->
+    domain = 'none',
+    dbHostname,
+    dbUsername,
+    dbUserPassword,
+    schemaName ->
     def terraformDeploymentEnvironment = [
         'TF_VAR_aws_access_key_deployment': awsAccessKeyDeployment,
         'TF_VAR_aws_secret_key_deployment': awsSecretKeyDeployment,
@@ -303,7 +315,11 @@ ext.deploy = {
         'TF_VAR_deploy_type': deployType,
         'TF_VAR_docker_username': dockerUsername,
         'TF_VAR_api_address' : "api.${domain}",
-        'TF_VAR_vpc_id' : getVpcId(terraformAccountBuildDir)
+        'TF_VAR_vpc_id' : getVpcId(terraformAccountBuildDir),
+        'TF_VAR_db_hostname' : dbHostname,
+        'TF_VAR_db_user' : dbUsername,
+        'TF_VAR_db_password' : dbUserPassword,
+        'TF_VAR_db_schema' : schemaName
     ]
     try {
         runTerraform(
@@ -331,7 +347,11 @@ ext.destroyDeploy = {
     deployType,
     terraformStateBucketName,
     terraformBuildDir,
-    terraformAccountBuildDir ->
+    terraformAccountBuildDir,
+    dbHostname,
+    dbUsername,
+    dbUserPassword,
+    schemaName ->
     def terraformDeploymentEnvironment = [
         'TF_VAR_aws_access_key_deployment': awsAccessKeyDeployment,
         'TF_VAR_aws_secret_key_deployment': awsSecretKeyDeployment,
@@ -340,7 +360,11 @@ ext.destroyDeploy = {
         'TF_VAR_deploy_id': deployId,
         'TF_VAR_deploy_type': deployType,
         'TF_VAR_docker_username': dockerUsername,
-        'TF_VAR_vpc_id' : getVpcId(terraformAccountBuildDir)
+        'TF_VAR_vpc_id' : getVpcId(terraformAccountBuildDir),
+        'TF_VAR_db_hostname' : dbHostname,
+        'TF_VAR_db_user' : dbUsername,
+        'TF_VAR_db_password' : dbUserPassword,
+        'TF_VAR_db_schema' : schemaName
     ]
     downloadS3Object(
         awsAccessKeyDeployment,
@@ -370,7 +394,11 @@ ext.deployCore = {
     terraformStateBucketName,
     terraformBuildDir,
     terraformAccountBuildDir,
-    domain ->
+    domain,
+    dbHostname,
+    dbUsername,
+    dbUserPassword,
+    schemaName ->
     def newDeployId = createDeployId(deployType)
     deploy(
         awsAccessKeyDeployment,
@@ -381,7 +409,11 @@ ext.deployCore = {
         terraformStateBucketName,
         terraformBuildDir,
         terraformAccountBuildDir,
-        domain
+        domain,
+        dbHostname,
+        dbUsername,
+        dbUserPassword,
+        schemaName
     )
     def oldDeployId = getS3ObjectContents(
         awsAccessKeyDeployment,
@@ -399,5 +431,9 @@ ext.deployCore = {
         deployType,
         newDeployId,
         oldDeployId,
-        domain)
+        domain,
+        dbHostname,
+        dbUsername,
+        dbUserPassword,
+        schemaName)
 }
