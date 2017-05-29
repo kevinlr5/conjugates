@@ -53,7 +53,9 @@ public class SentenceParser {
   }
 
   private static List<Entity> getEntitiesAndTypesForTag(String tag, Sentence sentence) {
-    return Lists.transform(sentence.mentions(tag), mention -> new Entity(mention, tag));
+    return Lists.transform(
+        sentence.mentions(tag),
+        mention -> new Entity(mention.toLowerCase().trim(), mention, tag));
   }
 
 }

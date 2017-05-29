@@ -5,10 +5,6 @@ import com.google.common.collect.Iterables;
 import org.junit.Assert;
 import org.junit.Test;
 import org.sentiment.analyzer.framework.AnalyzerIntegrationBaseTest;
-import org.sentiment.analyzer.services.articles.AnalyzedArticle;
-import org.sentiment.analyzer.services.articles.AnalyzedArticleRequest;
-import org.sentiment.analyzer.services.articles.ArticleAnalyzer;
-import org.sentiment.analyzer.services.documents.AnalyzedDocument;
 import org.sentiment.analyzer.services.documents.DocumentScore;
 import org.sentiment.analyzer.services.documents.Entity;
 import org.sentiment.analyzer.services.documents.EntityScore;
@@ -17,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class ArticleAnalyzerTest extends AnalyzerIntegrationBaseTest {
 
   @Autowired
-  private ArticleAnalyzer articleAnalyzer;
+  private ArticleService articleAnalyzer;
 
   @Test
   public void testArticleAnalysis() {
@@ -25,14 +21,12 @@ public class ArticleAnalyzerTest extends AnalyzerIntegrationBaseTest {
     String body = createTestBody();
     AnalyzedArticle result = articleAnalyzer.analyze(new AnalyzedArticleRequest(title, body));
 
-    AnalyzedDocument titleResult = result.getTitleAnalysis();
-
-    DocumentScore titleDocumentScore = titleResult.getScore();
+    DocumentScore titleDocumentScore = result.getTitleScore();
     Assert.assertEquals(75, titleDocumentScore.getAverageScore());
     Assert.assertEquals(1, titleDocumentScore.getWeight());
 
     EntityScore titleEntityScore =
-        Iterables.getOnlyElement(titleResult.getScore().getEntityScores());
+        Iterables.getOnlyElement(titleDocumentScore.getEntityScores());
     Assert.assertEquals(75, titleEntityScore.getAverageScore());
     Assert.assertEquals(1, titleEntityScore.getNumberOfMentions());
     Assert.assertEquals(1, titleEntityScore.getWeight());
@@ -40,13 +34,11 @@ public class ArticleAnalyzerTest extends AnalyzerIntegrationBaseTest {
     Entity titleExpectedEntity = createTestTitleEntity();
     Assert.assertEquals(titleExpectedEntity, titleEntityScore.getEntity());
 
-    AnalyzedDocument bodyResult = result.getBodyAnalysis();
-
-    DocumentScore bodyDocumentScore = bodyResult.getScore();
+    DocumentScore bodyDocumentScore = result.getBodyScore();
     Assert.assertEquals(25, bodyDocumentScore.getAverageScore());
     Assert.assertEquals(1, bodyDocumentScore.getWeight());
 
-    EntityScore bodyEntityScore = Iterables.getOnlyElement(bodyResult.getScore().getEntityScores());
+    EntityScore bodyEntityScore = Iterables.getOnlyElement(bodyDocumentScore.getEntityScores());
     Assert.assertEquals(25, bodyEntityScore.getAverageScore());
     Assert.assertEquals(1, bodyEntityScore.getNumberOfMentions());
     Assert.assertEquals(1, bodyEntityScore.getWeight());
@@ -60,7 +52,7 @@ public class ArticleAnalyzerTest extends AnalyzerIntegrationBaseTest {
   }
 
   private static Entity createTestTitleEntity() {
-    return new Entity("Jim Doe", "PERSON");
+    return new Entity("jim doe", "Jim Doe", "PERSON");
   }
 
   private static String createTestBody() {
@@ -68,7 +60,7 @@ public class ArticleAnalyzerTest extends AnalyzerIntegrationBaseTest {
   }
 
   private static Entity createTestBodyEntity() {
-    return new Entity("Jim Smith", "PERSON");
+    return new Entity("jim smith", "Jim Smith", "PERSON");
   }
 
 }

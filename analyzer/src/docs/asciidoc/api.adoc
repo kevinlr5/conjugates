@@ -54,7 +54,7 @@ include::{snippets}/document-controller-docs-test/document-example/curl-request.
 
 == Article API
 
-A resource that provides analysis of provided articles
+A resource that provides analysis of provided articles and retrieves analyzed articles
 
 === Analyze provided article
 
@@ -73,3 +73,44 @@ include::{snippets}/article-controller-docs-test/article-example/http-response.a
 ==== CURL request
 
 include::{snippets}/article-controller-docs-test/article-example/curl-request.adoc[]
+
+=== Get provided article
+
+==== Request structure
+
+include::{snippets}/article-controller-docs-test/test-get/http-request.adoc[]
+
+==== Response body fields
+
+include::{snippets}/article-controller-docs-test/test-get/response-fields.adoc[]
+
+==== Example response
+
+include::{snippets}/article-controller-docs-test/test-get/http-response.adoc[]
+
+==== CURL request
+
+include::{snippets}/article-controller-docs-test/test-get/curl-request.adoc[]
+
+== Entity API
+
+A resource that retrieves information about entities from analyzed articles
+
+=== Get provided entity
+
+==== Request structure
+
+include::{snippets}/entity-controller-docs-test/test-get/http-request.adoc[]
+
+==== Response body fields
+
+include::{snippets}/entity-controller-docs-test/test-get/response-fields.adoc[]
+
+==== Example response
+
+include::{snippets}/entity-controller-docs-test/test-get/http-response.adoc[]
+
+==== CURL request
+
+include::{snippets}/entity-controller-docs-test/test-get/curl-request.adoc[]
+
