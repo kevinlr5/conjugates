@@ -9,14 +9,6 @@ import java.nio.charset.Charset;
 import org.junit.Assert;
 import org.junit.Test;
 import org.sentiment.analyzer.framework.AnalyzerIntegrationBaseTest;
-import org.sentiment.analyzer.services.documents.AnalyzedDocument;
-import org.sentiment.analyzer.services.documents.DocumentAnalyzer;
-import org.sentiment.analyzer.services.documents.DocumentScore;
-import org.sentiment.analyzer.services.documents.Entity;
-import org.sentiment.analyzer.services.documents.EntityScore;
-import org.sentiment.analyzer.services.documents.ParsedDocument;
-import org.sentiment.analyzer.services.documents.ParsedSentence;
-import org.sentiment.analyzer.services.documents.Sentiment;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class DocumentAnalyzerTest extends AnalyzerIntegrationBaseTest {
@@ -88,7 +80,7 @@ public class DocumentAnalyzerTest extends AnalyzerIntegrationBaseTest {
   }
 
   private static Entity createTestEntity() {
-    return new Entity("Jim Smith", "PERSON");
+    return new Entity("jim smith", "Jim Smith", "PERSON");
   }
 
 }

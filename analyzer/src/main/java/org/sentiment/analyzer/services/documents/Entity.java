@@ -6,16 +6,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class Entity {
 
   private final String value;
+  private final String rawValue;
   private final String type;
 
   @JsonCreator
-  public Entity(@JsonProperty("value") String value, @JsonProperty("type") String type) {
+  public Entity(
+      @JsonProperty("value") String value,
+      @JsonProperty("rawValue") String rawValue,
+      @JsonProperty("type") String type) {
     this.value = value;
+    this.rawValue = rawValue;
     this.type = type;
   }
 
   public String getValue() {
     return value;
+  }
+
+  public String getRawValue() {
+    return rawValue;
   }
 
   public String getType() {
@@ -26,6 +35,7 @@ public class Entity {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
+    result = prime * result + ((rawValue == null) ? 0 : rawValue.hashCode());
     result = prime * result + ((type == null) ? 0 : type.hashCode());
     result = prime * result + ((value == null) ? 0 : value.hashCode());
     return result;
@@ -43,6 +53,13 @@ public class Entity {
       return false;
     }
     Entity other = (Entity) obj;
+    if (rawValue == null) {
+      if (other.rawValue != null) {
+        return false;
+      }
+    } else if (!rawValue.equals(other.rawValue)) {
+      return false;
+    }
     if (type == null) {
       if (other.type != null) {
         return false;
@@ -62,7 +79,7 @@ public class Entity {
 
   @Override
   public String toString() {
-    return "Entity [value=" + value + ", type=" + type + "]";
+    return "Entity [value=" + value + ", rawValue=" + rawValue + ", type=" + type + "]";
   }
 
 }

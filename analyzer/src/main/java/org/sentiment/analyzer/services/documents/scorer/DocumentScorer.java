@@ -60,7 +60,6 @@ public class DocumentScorer {
     return new EntityScore(
         entity,
         averageScore,
-        aggregateScore,
         numberOfMentions,
         numberOfMentions);
   }

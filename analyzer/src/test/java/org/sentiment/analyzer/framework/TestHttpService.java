@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 
-import org.sentiment.analyzer.services.properties.AnalyzerProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.restdocs.JUnitRestDocumentation;
 import org.springframework.restdocs.mockmvc.MockMvcRestDocumentation;
@@ -22,16 +21,13 @@ import org.springframework.web.context.WebApplicationContext;
 public class TestHttpService {
 
   private final WebApplicationContext webApplicationContext;
-  private final AnalyzerProperties properties;
   private final ObjectMapper mapper;
 
   @Autowired
   public TestHttpService(
       WebApplicationContext webApplicationContext,
-      AnalyzerProperties properties,
       ObjectMapper mapper) {
     this.webApplicationContext = webApplicationContext;
-    this.properties = properties;
     this.mapper = mapper;
   }
 
@@ -59,8 +55,8 @@ public class TestHttpService {
     return MockMvcBuilders.webAppContextSetup(webApplicationContext)
         .apply(MockMvcRestDocumentation.documentationConfiguration(documentation).uris()
             .withScheme("https")
-            .withHost("localhost")
-            .withPort(properties.getPort()))
+            .withHost("api.richardskevin.com")
+            .withPort(8443))
         .alwaysDo(createDefaultDocumentationHandler())
         .build();
   }

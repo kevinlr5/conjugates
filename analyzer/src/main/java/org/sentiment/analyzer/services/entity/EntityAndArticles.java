@@ -1,25 +1,29 @@
-package org.sentiment.analyzer.services.documents;
+package org.sentiment.analyzer.services.entity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class EntityScore {
+import java.util.List;
+
+import org.sentiment.analyzer.services.documents.Entity;
+
+public class EntityAndArticles {
 
   private final Entity entity;
   private final int averageScore;
   private final int numberOfMentions;
-  private final int weight;
+  private final List<ArticleReference> articles;
 
   @JsonCreator
-  public EntityScore(
+  public EntityAndArticles(
       @JsonProperty("entity") Entity entity,
       @JsonProperty("averageScore") int averageScore,
       @JsonProperty("numberOfMentions") int numberOfMentions,
-      @JsonProperty("weight") int weight) {
+      @JsonProperty("articles") List<ArticleReference> articles) {
     this.entity = entity;
     this.averageScore = averageScore;
     this.numberOfMentions = numberOfMentions;
-    this.weight = weight;
+    this.articles = articles;
   }
 
   public Entity getEntity() {
@@ -34,18 +38,18 @@ public class EntityScore {
     return numberOfMentions;
   }
 
-  public int getWeight() {
-    return weight;
+  public List<ArticleReference> getArticles() {
+    return articles;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
+    result = prime * result + ((articles == null) ? 0 : articles.hashCode());
     result = prime * result + averageScore;
     result = prime * result + ((entity == null) ? 0 : entity.hashCode());
     result = prime * result + numberOfMentions;
-    result = prime * result + weight;
     return result;
   }
 
@@ -60,7 +64,14 @@ public class EntityScore {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    EntityScore other = (EntityScore) obj;
+    EntityAndArticles other = (EntityAndArticles) obj;
+    if (articles == null) {
+      if (other.articles != null) {
+        return false;
+      }
+    } else if (!articles.equals(other.articles)) {
+      return false;
+    }
     if (averageScore != other.averageScore) {
       return false;
     }
@@ -74,16 +85,13 @@ public class EntityScore {
     if (numberOfMentions != other.numberOfMentions) {
       return false;
     }
-    if (weight != other.weight) {
-      return false;
-    }
     return true;
   }
 
   @Override
   public String toString() {
-    return "EntityScore [entity=" + entity + ", averageScore=" + averageScore
-        + ", numberOfMentions=" + numberOfMentions + ", weight=" + weight + "]";
+    return "EntityAndArticles [entity=" + entity + ", averageScore=" + averageScore
+        + ", numberOfMentions=" + numberOfMentions + ", articles=" + articles + "]";
   }
 
 }
