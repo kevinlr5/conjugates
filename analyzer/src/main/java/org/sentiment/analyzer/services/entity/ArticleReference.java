@@ -8,21 +8,28 @@ import org.sentiment.analyzer.services.documents.EntityScore;
 public class ArticleReference {
 
   private final long id;
+  private final long articleId;
   private final String title;
   private final EntityScore entityScore;
 
   @JsonCreator
   public ArticleReference(
       @JsonProperty("id") long id,
+      @JsonProperty("articleId") long articleId,
       @JsonProperty("title") String title,
       @JsonProperty("entityScore") EntityScore entityScore) {
     this.id = id;
+    this.articleId = articleId;
     this.title = title;
     this.entityScore = entityScore;
   }
 
   public long getId() {
     return id;
+  }
+
+  public long getArticleId() {
+    return articleId;
   }
 
   public String getTitle() {
@@ -37,6 +44,7 @@ public class ArticleReference {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
+    result = prime * result + (int) (articleId ^ (articleId >>> 32));
     result = prime * result + ((entityScore == null) ? 0 : entityScore.hashCode());
     result = prime * result + (int) (id ^ (id >>> 32));
     result = prime * result + ((title == null) ? 0 : title.hashCode());
@@ -55,6 +63,9 @@ public class ArticleReference {
       return false;
     }
     ArticleReference other = (ArticleReference) obj;
+    if (articleId != other.articleId) {
+      return false;
+    }
     if (entityScore == null) {
       if (other.entityScore != null) {
         return false;
@@ -77,7 +88,8 @@ public class ArticleReference {
 
   @Override
   public String toString() {
-    return "ArticleReference [id=" + id + ", title=" + title + ", entityScore=" + entityScore + "]";
+    return "ArticleReference [id=" + id + ", articleId=" + articleId + ", title=" + title
+        + ", entityScore=" + entityScore + "]";
   }
 
 }

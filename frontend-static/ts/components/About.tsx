@@ -42,8 +42,8 @@ export default class About extends React.Component<{}, State> {
     private renderInfo() {
         if (this.state.info) {
             return <ul className='square indented-section'>
-                    <li>Github: <a target='_blank' href='https://github.com/kevinlr5/conjugates'>
-                            https://github.com/kevinlr5/conjugates
+                    <li>Github: <a target='_blank' href='https://github.com/kevinlr5/sentiment-analyzer'>
+                            https://github.com/kevinlr5/sentiment-analyzer
                         </a>
                     </li>
                     <li>Name: {this.state.info.name}</li>

@@ -3,19 +3,6 @@ interface AnalyzeArticleRequest {
     body: string;
 }
 
-interface Entity {
-    value: string;
-    type: string;
-}
-
-interface EntityScore {
-    entity: Entity;
-    averageScore: number;
-    aggregateScore: number;
-    numberOfMentions: number;
-    weight: number;
-}
-
 interface DocumentScore {
     entityScores: EntityScore[];
     averageScore: number;
@@ -23,6 +10,8 @@ interface DocumentScore {
 }
 
 interface AnalyzeArticleResponse {
+    id: number;
+    title: string;
     titleScore: DocumentScore;
     bodyScore: DocumentScore;
 }

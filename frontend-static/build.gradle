@@ -42,5 +42,5 @@ task copyApiDocs(type: Copy, dependsOn: [':analyzer:asciidoctor', 'clean']) {
 
 
 tasks.buildFrontend.dependsOn npmInstall, clean, copyApiDocs
-tasks.runFrontend.dependsOn npmInstall, copyApiDocs
+tasks.runFrontend.dependsOn npmInstall
 tasks.shrinkwrap.dependsOn buildFrontend

@@ -3,7 +3,7 @@
 A server that can analyze the sentiment of text inputs
 
 - Russell Conjugation: https://en.wikipedia.org/wiki/Emotive_conjugation
-- Repo: https://github.com/kevinlr5/conjugates
+- Repo: https://github.com/kevinlr5/sentiment-analyzer
 
 ## Overview
 

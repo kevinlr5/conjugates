@@ -52,7 +52,7 @@ public class ArticleAnalyzerTest extends AnalyzerIntegrationBaseTest {
   }
 
   private static Entity createTestTitleEntity() {
-    return new Entity("jim doe", "Jim Doe", "PERSON");
+    return new Entity("jim_doe", "Jim Doe", "PERSON");
   }
 
   private static String createTestBody() {
@@ -60,7 +60,7 @@ public class ArticleAnalyzerTest extends AnalyzerIntegrationBaseTest {
   }
 
   private static Entity createTestBodyEntity() {
-    return new Entity("jim smith", "Jim Smith", "PERSON");
+    return new Entity("jim_smith", "Jim Smith", "PERSON");
   }
 
 }
