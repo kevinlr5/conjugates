@@ -56,7 +56,7 @@ public class EntityControllerTest extends AnalyzerIntegrationBaseTest {
     Assert.assertEquals(10, numMentions);
 
     ArticleReference ref = Iterables.getOnlyElement(response.getArticles());
-    Assert.assertEquals(article.getId(), ref.getId());
+    Assert.assertEquals(article.getId(), ref.getArticleId());
     Assert.assertEquals(title, ref.getTitle());
     Assert.assertEquals(35, ref.getEntityScore().getAverageScore());
   }

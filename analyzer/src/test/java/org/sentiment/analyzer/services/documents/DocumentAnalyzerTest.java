@@ -80,7 +80,7 @@ public class DocumentAnalyzerTest extends AnalyzerIntegrationBaseTest {
   }
 
   private static Entity createTestEntity() {
-    return new Entity("jim smith", "Jim Smith", "PERSON");
+    return new Entity("jim_smith", "Jim Smith", "PERSON");
   }
 
 }

@@ -72,7 +72,7 @@ export default class AnalyzedArticle extends React.Component<Props, {}> {
 
     private renderEntityAsRow(entity: EntityScore) {
         return <tr key={entity.entity.value}>
-                <td>{entity.entity.value}</td>
+                <td><a href={'/#/entity/' + entity.entity.value}>{entity.entity.rawValue}</a></td>
                 <td>{entity.entity.type}</td>
                 <td>{entity.averageScore}</td>
                 <td>{entity.weight}</td>

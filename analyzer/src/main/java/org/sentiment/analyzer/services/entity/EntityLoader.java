@@ -62,9 +62,10 @@ public class EntityLoader {
 
   private static ArticleReference convertToArticleReference(ResultSet rs) throws SQLException {
     long articleId = rs.getLong("article_id");
+    long referenceId = rs.getLong("id");
     String articleTitle = rs.getString("title");
     EntityScore entityScore = Entities.readEntityValue(rs);
-    return new ArticleReference(articleId, articleTitle, entityScore);
+    return new ArticleReference(referenceId, articleId, articleTitle, entityScore);
   }
 
   private int countMentions(List<ArticleReference> articleReferences) {
@@ -78,7 +79,7 @@ public class EntityLoader {
   private int getAverage(List<ArticleReference> articleReferences, int numberOfMentions) {
     double average = 0;
     for (ArticleReference ref : articleReferences) {
-      double percentage = ref.getEntityScore().getNumberOfMentions() / numberOfMentions;
+      double percentage = ref.getEntityScore().getNumberOfMentions() / (double)numberOfMentions;
       average += percentage * ref.getEntityScore().getAverageScore();
     }
     return (int)average;
