@@ -18,11 +18,12 @@ The Sentiment Analyzer uses Terraform to setup the AWS account for deployment an
 4. Export your dockerhub username and password as `DOCKER_USERNAME` and `DOCKER_PASSWORD`.
 5. Register your domain name (`yourdomain.com`) in the Route53 default hosted zone
 6. Export `yourdomain.com` as `DOMAIN`
-7. Create a cert in Certificate Manager for `www.yourdomain.com` with `api.yourdomain.com` and `yourdomain.com` as alternates
-8. Install terraform and place it on your path.
-9. `./gradlew clean createAwsAccount`
-10. In the ouput, you should see a variable called `terraform_bucket_name`. Save its value.
-11. Login to the AWS console, generate keys for the `deployer` IAM user, and save the keys locally.
+7. Export a db password as `DB_USER_PASSWORD`
+8. Create a cert in Certificate Manager for `www.yourdomain.com` with `api.yourdomain.com` and `yourdomain.com` as alternates
+9. Install terraform and place it on your path.
+10. `./gradlew clean createAwsAccount`
+11. In the ouput, you should see a variable called `terraform_bucket_name`. Save its value.
+12. Login to the AWS console, generate keys for the `deployer` IAM user, and save the keys locally.
 
 ## Structure of the account
 
@@ -36,7 +37,7 @@ Deployments of the analyzer can be done locally or through a CI/CD server (this 
 
 ## Structure of a deployment
 
-The Sentiment Analyzer is a straightforward containerized application that is deployed using Amazon ECS. An ECS cluster is created with an analyzer and frontend services that each have one exposed port. Internally, there are two ELB instances on top of EC2 instances. The EC2 instances are running ECS optimized images (coreos), which are running the analyzer and frontend docker containers retrieved from dockerhub. All of these EC2 resources are running inside a VPC and do not allow outside access except to the single ports exposed by the ELBs. In order to facilitate proper communication, there are some IAM resources created that are utilized by some of the services.
+The Sentiment Analyzer is a straightforward containerized application that is deployed using Amazon ECS. An ECS cluster is created with an analyzer and frontend services that each have one exposed port. Internally, there are two ELB instances on top of EC2 instances. The EC2 instances are running ECS optimized images (coreos), which are running the analyzer and frontend docker containers retrieved from dockerhub. All of these EC2 resources are running inside a VPC and do not allow outside access except to the single ports exposed by the ELBs. In order to facilitate proper communication, there are some IAM resources created that are utilized by some of the services. The analyzer server stores persistent data in an RDS instance running MySQL. The RDS instance is in the same VPC as the application.
 
 ## Deploying a test instance
 
@@ -58,9 +59,12 @@ The Sentiment Analyzer is a straightforward containerized application that is de
 - A full deploy to AWS will occur on each PR build
 - The persistent `develop` instance will be upgraded after each merge to develop
 
+## Database migrations
+The Sentiment Analyzer stores some information about articles it has analyzed in an RDS MySQL instance. The schema for this instance is checked into the repo in `infrastructure/main_schema` in the form of a sequence of SQL migrations that are applied automatically by Flyway. This process is tested on every PR twice. Once to prepare a test database for integration tests. Then a second time to provide a database for the test deployment. When a core deployment is upgraded, the migration occurs prior to the creation of the new deployment. Migrations should never break existing code.
+
 ## Continuous deployment of develop (with zero downtime upgrades)
 
-The CI/CD build is designed to create a persistent deployment based on the `develop` branch. Each merge to `develop` upgrades this deployment with zero downtime. The strategy employed is a variant of blue/green upgrading. A second full `develop` deployment is created and tested alongside the old one. When it's ready to go, a DNS based switchover occurs. ALIAS records are updated with a 60 second TTL to point at the new deployment and the old deployment is destroyed. Users of the frontend should not see an interruption.
+The CI/CD build is designed to create a persistent deployment based on the `develop` branch. Each merge to `develop` upgrades this deployment with zero downtime. The strategy employed is a variant of blue/green upgrading. First, database migrations run using Flyway. Then a second full `develop` deployment is created and tested alongside the old one. When it's ready to go, a DNS based switchover occurs. ALIAS records are updated with a 60 second TTL to point at the new deployment and the old deployment is destroyed. Users of the frontend should not see an interruption.
 
 ## DNS vs ELB style upgrades
 

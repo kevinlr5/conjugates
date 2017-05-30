@@ -22,6 +22,10 @@ This document describes the tools necessary to do development on the sentiment a
 
 1. Install docker
 
+## MySQL Workbench
+
+1. The Sentiment Analyzer uses a MySQL database. MySQL Workbench is a highly recommended for interacting with MySQL.
+
 ## Builds
 
 The Sentiment Analyzer uses gradle as its build system. The gradle wrapper is committed to the repo. Additionally, the build configuration uses a multi-project build.
@@ -31,6 +35,10 @@ The Sentiment Analyzer uses gradle as its build system. The gradle wrapper is co
 - Run frontend server: `./gradlew clean runFrontend`
 - Build runnable docker images: `./gradlew clean buildImage`
 - Build server html documentation: `./gradlew clean asciidoctor`
+- Start a local MySQL instance: `./gradlew clean startLocalDb`
+- Kill a local MySQL instance: `./gradlew clean destroyLocalDb`
+- Clear out local MySQL schema: `./gradlew clean flywayCleanLocal`
+- Migrate local MySQL schema: `./gradlew clean flywayMigrateLocal`
 
 ### Containers
 - Applications are containerized using docker
