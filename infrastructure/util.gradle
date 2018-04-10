@@ -217,8 +217,12 @@ ext.putS3Object = { key, secretKey, bucketName, keyName, content ->
 }
 
 ext.doesS3ObjectExist = { key, secretKey, bucketName, keyName ->
-    def s3client = createS3Client(key, secretKey)
-    return s3client.doesObjectExist(bucketName, keyName)
+    if (bucketName == null) {
+        return false;
+    } else {
+        def s3client = createS3Client(key, secretKey)
+        return s3client.doesObjectExist(bucketName, keyName)
+    }
 }
 
 ext.downloadS3Object = { key, secretKey, bucketName, keyName, outputFile ->
