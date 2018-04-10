@@ -60,7 +60,7 @@ export default class About extends React.Component<{}, State> {
 
     private renderAuthor() {
         return <p>
-                My name is Kevin Richards. I'm a software engineer originally from the suburbs of Oakland.
+                My name is Kevin Richards. I'm a software engineer living in the Salt Lake Valley.
             </p>;
     }
 

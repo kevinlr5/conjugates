@@ -23,7 +23,8 @@ The Sentiment Analyzer uses Terraform to setup the AWS account for deployment an
 9. Install terraform and place it on your path.
 10. `./gradlew clean createAwsAccount`
 11. In the ouput, you should see a variable called `terraform_bucket_name`. Save its value.
-12. Login to the AWS console, generate keys for the `deployer` IAM user, and save the keys locally.
+12. In the output, you should see a variable called `db_hostname`. Save its value.
+13. Login to the AWS console, generate keys for the `deployer` IAM user, and save the keys locally.
 
 ## Structure of the account
 
@@ -46,9 +47,9 @@ The Sentiment Analyzer is a straightforward containerized application that is de
 3. Export the keys for the `deployer` account as `AWS_ACCESS_KEY_DEPLOYMENT` and `AWS_SECRET_KEY_DEPLOYMENT`.
 4. Export the ARN of your cert as `AWS_CERT_ARN`
 5. Export the DB info as `DB_HOSTNAME` and `DB_USER_PASSWORD`
-6. `./gradlew clean build deployTest`
+6. `./gradlew clean build deployTest` (note that the site won't work without proper SSL config)
 7. The previous command will complete when it verifies that the deployment is working. It writes its state to the S3 bucket.
-8. To destroy the test deployment, take the deployId from the log and run `./gradlew clean destroyDeployTest -PdeployId=theId`
+8. To destroy the test deployment, take the deployId from the log and run `./gradlew clean destroyDeploy -PdeployId=theId`. The id usually looks like `test-123456`.
 
 ## Configuring a CI/CD server (CircleCi)
 
